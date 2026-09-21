@@ -88,7 +88,7 @@ export const DEFAULT_USERS: User[] = [
 export const INITIAL_SETTINGS: AppSettings = {
   currency: 'INR',
   currencySymbol: '₹',
-  sheetUrl: 'https://script.google.com/macros/s/AKfycby0xwUvO4h4KM12hanisp5OhNdjR4c6ca-AianDSgQL1siiiLfAb91lS1iLEvFN8sc/exec',
+  sheetUrl: 'https://script.google.com/macros/s/AKfycbxFti-YWVCKI0HIqbwn6TaWAoNfF_f_aAa5A2xB1D7cxM4AwMFjMSIFTbCja7GB29QC/exec',
   autoSync: false,
   theme: 'dark',
   userName: 'Kavin',
@@ -404,7 +404,10 @@ export const StorageService = {
     }
     try {
       const parsed = JSON.parse(data);
-      if (parsed.sheetUrl === undefined) {
+      if (
+        !parsed.sheetUrl ||
+        parsed.sheetUrl.includes('AKfycby0xwUvO4h4KM12hanisp5OhNdjR4c6ca')
+      ) {
         parsed.sheetUrl = INITIAL_SETTINGS.sheetUrl;
       }
       if (typeof parsed.autoSync !== 'boolean') {

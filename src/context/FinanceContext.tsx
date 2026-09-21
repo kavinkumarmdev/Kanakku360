@@ -577,9 +577,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // TRANSACTION OPERATIONS
   const addTransaction = async (txData: Omit<Transaction, 'id' | 'createdAt'>) => {
+    const resolvedFieldName = txData.fieldName || (txData.fieldId ? fields.find(f => f.id === txData.fieldId)?.name : undefined);
+    const resolvedMemberName = txData.memberName || (txData.memberId ? familyMembers.find(m => m.id === txData.memberId)?.name : undefined);
+    const resolvedLivestockName = txData.livestockName || (txData.livestockId ? livestock.find(l => l.id === txData.livestockId)?.name : undefined);
+
     const newTx: Transaction = {
       ...txData,
       id: generateId('tx'),
+      fieldName: resolvedFieldName,
+      memberName: resolvedMemberName,
+      livestockName: resolvedLivestockName,
       createdAt: new Date().toISOString(),
     };
 
@@ -620,11 +627,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const oldTx = transactions.find(t => t.id === id);
     if (!oldTx) return;
 
+    const resolvedFieldName = updatedTx.fieldName !== undefined 
+      ? updatedTx.fieldName 
+      : (updatedTx.fieldId ? fields.find(f => f.id === updatedTx.fieldId)?.name : oldTx.fieldName);
+    const resolvedMemberName = updatedTx.memberName !== undefined 
+      ? updatedTx.memberName 
+      : (updatedTx.memberId ? familyMembers.find(m => m.id === updatedTx.memberId)?.name : oldTx.memberName);
+    const resolvedLivestockName = updatedTx.livestockName !== undefined 
+      ? updatedTx.livestockName 
+      : (updatedTx.livestockId ? livestock.find(l => l.id === updatedTx.livestockId)?.name : oldTx.livestockName);
+
+    const mergedTx: Transaction = { 
+      ...oldTx, 
+      ...updatedTx, 
+      fieldName: resolvedFieldName,
+      memberName: resolvedMemberName,
+      livestockName: resolvedLivestockName,
+    };
+
     // Adjust balances if was paid or now paid
     setAccounts(prev => {
       let next = [...prev];
       const oldDeducted = oldTx.paymentStatus !== 'pending';
-      const newDeducted = (updatedTx.paymentStatus ?? oldTx.paymentStatus) !== 'pending';
+      const newDeducted = (mergedTx.paymentStatus ?? oldTx.paymentStatus) !== 'pending';
 
       if (oldDeducted) {
         // Reverse old
@@ -642,8 +667,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return acc;
         });
       }
-
-      const mergedTx = { ...oldTx, ...updatedTx };
 
       if (newDeducted) {
         // Apply new
@@ -665,11 +688,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return next;
     });
 
-    setTransactions(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTx } : t)));
+    setTransactions(prev => prev.map(t => (t.id === id ? mergedTx : t)));
     addToast('Entry updated', 'info');
 
     if (settings.sheetUrl && settings.autoSync) {
-      GoogleSheetApiService.updateTransaction(settings.sheetUrl, id, updatedTx).catch(err => {
+      GoogleSheetApiService.updateTransaction(settings.sheetUrl, id, mergedTx).catch(err => {
         console.warn('Google Sheet updateTransaction fallback:', err);
       });
     }

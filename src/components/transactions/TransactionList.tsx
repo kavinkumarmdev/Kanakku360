@@ -46,19 +46,22 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
+    return (transactions || []).filter(tx => {
+      if (!tx) return false;
+
       // Search
       if (filters.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
-        const descMatch = (tx.description || '').toLowerCase().includes(query);
-        const tagMatch = (tx.tags || []).some(t => t.toLowerCase().includes(query));
-        const workerMatch = (tx.workerName || '').toLowerCase().includes(query);
-        const fieldMatch = (tx.fieldName || '').toLowerCase().includes(query);
-        if (!descMatch && !tagMatch && !workerMatch && !fieldMatch) return false;
+        const query = filters.searchQuery.toLowerCase().trim();
+        const descMatch = String(tx.description || '').toLowerCase().includes(query);
+        const tagMatch = Array.isArray(tx.tags) && tx.tags.some(t => String(t || '').toLowerCase().includes(query));
+        const workerMatch = String(tx.workerName || '').toLowerCase().includes(query);
+        const fieldMatch = String(tx.fieldName || '').toLowerCase().includes(query);
+        const memberMatch = String(tx.memberName || '').toLowerCase().includes(query);
+        if (!descMatch && !tagMatch && !workerMatch && !fieldMatch && !memberMatch) return false;
       }
 
       // Type
-      if (filters.type !== 'all' && tx.type !== filters.type) return false;
+      if (filters.type && filters.type !== 'all' && tx.type !== filters.type) return false;
 
       // Category
       if (filters.category && tx.category !== filters.category) return false;
@@ -81,29 +84,31 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       }
 
       // Date Range
-      if (filters.startDate && tx.date < filters.startDate) return false;
-      if (filters.endDate && tx.date > filters.endDate) return false;
+      if (filters.startDate && String(tx.date || '') < filters.startDate) return false;
+      if (filters.endDate && String(tx.date || '') > filters.endDate) return false;
 
       return true;
     }).sort((a, b) => {
+      const dateA = String(a?.date || '');
+      const dateB = String(b?.date || '');
       if (sortOrder === 'desc') {
-        return b.date.localeCompare(a.date);
+        return dateB.localeCompare(dateA);
       }
-      return a.date.localeCompare(b.date);
+      return dateA.localeCompare(dateB);
     });
   }, [transactions, filters, sortOrder]);
 
   // Aggregate stats for filtered data
   const filteredIncome = useMemo(() => {
     return filteredTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter(t => t && t.type === 'income')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   }, [filteredTransactions]);
 
   const filteredExpense = useMemo(() => {
     return filteredTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter(t => t && t.type === 'expense')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   }, [filteredTransactions]);
 
   const handleResetFilters = () => {

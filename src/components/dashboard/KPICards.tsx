@@ -3,7 +3,11 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../utils/formatters';
 import { Wallet, TrendingUp, TrendingDown, PiggyBank, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-export const KPICards: React.FC = () => {
+interface KPICardsProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export const KPICards: React.FC<KPICardsProps> = ({ onNavigate }) => {
   const {
     totalNetWorth,
     totalIncomeThisMonth,
@@ -17,7 +21,13 @@ export const KPICards: React.FC = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
       {/* Total Net Worth */}
-      <div className="glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg">
+      <div
+        onClick={() => onNavigate?.('accounts')}
+        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
+          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
+        }`}
+        title="View All Accounts"
+      >
         <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-80" />
         <div className="absolute -top-10 -right-10 w-28 h-28 bg-indigo-500/15 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all duration-500" />
         
@@ -42,7 +52,13 @@ export const KPICards: React.FC = () => {
       </div>
 
       {/* Income This Month */}
-      <div className="glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg">
+      <div
+        onClick={() => onNavigate?.('transactions')}
+        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
+          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
+        }`}
+        title="View Ledger & Income Entries"
+      >
         <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-80" />
         <div className="absolute -top-10 -right-10 w-28 h-28 bg-emerald-500/15 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all duration-500" />
         
@@ -66,7 +82,13 @@ export const KPICards: React.FC = () => {
       </div>
 
       {/* Expense This Month */}
-      <div className="glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg">
+      <div
+        onClick={() => onNavigate?.('transactions')}
+        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
+          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
+        }`}
+        title="View Ledger & Expenses"
+      >
         <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent opacity-80" />
         <div className="absolute -top-10 -right-10 w-28 h-28 bg-rose-500/15 rounded-full blur-2xl group-hover:bg-rose-500/25 transition-all duration-500" />
         
@@ -90,7 +112,13 @@ export const KPICards: React.FC = () => {
       </div>
 
       {/* Net Savings & Savings Rate */}
-      <div className="glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg">
+      <div
+        onClick={() => onNavigate?.('budgets')}
+        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
+          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
+        }`}
+        title="View Budgets & Limits"
+      >
         <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80" />
         <div className="absolute -top-10 -right-10 w-28 h-28 bg-amber-500/15 rounded-full blur-2xl group-hover:bg-amber-500/25 transition-all duration-500" />
         
