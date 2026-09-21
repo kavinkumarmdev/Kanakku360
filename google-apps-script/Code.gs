@@ -274,11 +274,11 @@ function getGoalHeaders() {
 }
 
 function getLoanHeaders() {
-  return ['id', 'name', 'type', 'amount', 'interestRate', 'interestType', 'monthlyEmi', 'tenureMonths', 'dueDate', 'balance', 'status', 'notes'];
+  return ['id', 'name', 'lenderBorrower', 'type', 'principalAmount', 'interestRate', 'interestType', 'emiAmount', 'startDate', 'tenureMonths', 'dueDate', 'status', 'notes', 'payments'];
 }
 
 function getSavingHeaders() {
-  return ['id', 'name', 'type', 'targetAmount', 'monthlyInstallment', 'tenureMonths', 'startDate', 'currentBalance', 'notes'];
+  return ['id', 'name', 'institution', 'schemeType', 'totalValue', 'totalInstallments', 'frequency', 'startDate', 'dueDate', 'dueDayOfMonth', 'status', 'notes', 'color', 'installments', 'bulkClaim', 'targetMaturityDate', 'expectedReturnRate'];
 }
 
 function getSettingsHeaders() {
@@ -312,7 +312,11 @@ function getSheetData(sheet) {
       if (!header) continue;
       let val = row[j];
       if (val instanceof Date) {
-        val = val.toISOString().split('T')[0];
+        if (header === 'createdAt' || header === 'updatedAt') {
+          val = val.toISOString();
+        } else {
+          val = val.toISOString().split('T')[0];
+        }
       } else if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
         try {
           val = JSON.parse(val);
@@ -403,8 +407,11 @@ function updateRowById(sheet, id, item, headers) {
 function deleteRowById(sheet, id) {
   if (!sheet || !id) return;
   const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return;
+  const headers = data[0];
+  const idColIndex = headers.indexOf('id') !== -1 ? headers.indexOf('id') : 0;
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(id)) {
+    if (String(data[i][idColIndex]) === String(id)) {
       sheet.deleteRow(i + 1);
       return;
     }
@@ -417,14 +424,17 @@ function deleteRowById(sheet, id) {
 function updateAccountBalance(sheet, id, newBalance) {
   if (!sheet || !id) return;
   const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return;
   const headers = data[0];
+  const idColIndex = headers.indexOf('id') !== -1 ? headers.indexOf('id') : 0;
   const balIndex = headers.indexOf('balance');
   if (balIndex === -1) return;
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(id)) {
+    if (String(data[i][idColIndex]) === String(id)) {
       sheet.getRange(i + 1, balIndex + 1).setValue(newBalance);
       return;
     }
   }
 }
+

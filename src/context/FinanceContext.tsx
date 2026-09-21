@@ -667,6 +667,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setTransactions(prev => prev.map(t => (t.id === id ? { ...t, ...updatedTx } : t)));
     addToast('Entry updated', 'info');
+
+    if (settings.sheetUrl && settings.autoSync) {
+      GoogleSheetApiService.updateTransaction(settings.sheetUrl, id, updatedTx).catch(err => {
+        console.warn('Google Sheet updateTransaction fallback:', err);
+      });
+    }
   };
 
   const deleteTransaction = async (id: string) => {
@@ -1687,24 +1693,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (mode === 'pull') {
         const res = await GoogleSheetApiService.fetchAllData(settings.sheetUrl);
         if (res.status === 'success' && res.data) {
-          if (res.data.transactions && res.data.transactions.length > 0) setTransactions(res.data.transactions);
-          if (res.data.familyMembers && res.data.familyMembers.length > 0) setFamilyMembers(res.data.familyMembers);
-          if (res.data.categories && res.data.categories.length > 0) setCategories(res.data.categories);
-          if (res.data.accounts && res.data.accounts.length > 0) setAccounts(res.data.accounts);
-          if (res.data.budgets && res.data.budgets.length > 0) setBudgets(res.data.budgets);
-          if (res.data.goals && res.data.goals.length > 0) setGoals(res.data.goals);
-          if (res.data.loans && res.data.loans.length > 0) setLoans(res.data.loans);
-          if (res.data.savings && res.data.savings.length > 0) setSavings(res.data.savings);
-          if (res.data.fields && res.data.fields.length > 0) setFields(res.data.fields);
-          if (res.data.treeHarvests && res.data.treeHarvests.length > 0) setTreeHarvests(res.data.treeHarvests);
-          if (res.data.livestock && res.data.livestock.length > 0) setLivestock(res.data.livestock);
-          if (res.data.workers && res.data.workers.length > 0) setWorkers(res.data.workers);
+          if (Array.isArray(res.data.transactions)) setTransactions(res.data.transactions);
+          if (Array.isArray(res.data.familyMembers) && res.data.familyMembers.length > 0) setFamilyMembers(res.data.familyMembers);
+          if (Array.isArray(res.data.categories) && res.data.categories.length > 0) setCategories(res.data.categories);
+          if (Array.isArray(res.data.accounts) && res.data.accounts.length > 0) setAccounts(res.data.accounts);
+          if (Array.isArray(res.data.budgets)) setBudgets(res.data.budgets);
+          if (Array.isArray(res.data.goals)) setGoals(res.data.goals);
+          if (Array.isArray(res.data.loans)) setLoans(res.data.loans);
+          if (Array.isArray(res.data.savings)) setSavings(res.data.savings);
+          if (Array.isArray(res.data.fields)) setFields(res.data.fields);
+          if (Array.isArray(res.data.treeHarvests)) setTreeHarvests(res.data.treeHarvests);
+          if (Array.isArray(res.data.livestock)) setLivestock(res.data.livestock);
+          if (Array.isArray(res.data.workers)) setWorkers(res.data.workers);
 
           const syncedAt = new Date().toLocaleString();
           setSyncState({ status: 'success', lastSynced: syncedAt, pendingChangesCount: 0 });
           setSettings(prev => ({ ...prev, lastSyncedAt: syncedAt }));
           addToast(settings.language === 'ta' ? 'கூகிள் தாளிலிருந்து தரவு புதுப்பிக்கப்பட்டது!' : 'Synchronized data from Google Sheet', 'success');
           return true;
+        } else {
+          throw new Error(res.message || 'Failed to pull data from Google Sheet');
         }
       } else if (mode === 'smart') {
         // Fetch remote data first to merge changes from other devices (e.g. mobile <-> laptop)

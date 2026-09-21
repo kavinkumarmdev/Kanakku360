@@ -404,7 +404,7 @@ export const StorageService = {
     }
     try {
       const parsed = JSON.parse(data);
-      if (!parsed.sheetUrl) {
+      if (parsed.sheetUrl === undefined) {
         parsed.sheetUrl = INITIAL_SETTINGS.sheetUrl;
       }
       if (typeof parsed.autoSync !== 'boolean') {
