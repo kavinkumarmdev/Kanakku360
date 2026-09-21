@@ -59,7 +59,7 @@ export const LoansSavingsHub: React.FC = () => {
       {/* Header & Main Mode Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
             <Coins className="text-emerald-400 w-6 h-6" />
             <span>{t('loansSavingsTitle')}</span>
           </h2>
@@ -71,33 +71,33 @@ export const LoansSavingsHub: React.FC = () => {
         {/* View Switcher & Add Actions */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Toggle pill */}
-          <div className="p-1 rounded-2xl bg-slate-900 border border-slate-800 flex items-center">
+          <div className="p-1 rounded-xl bg-slate-900 border border-slate-800 flex items-center">
             <button
               onClick={() => setActiveSubTab('savings')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
                 activeSubTab === 'savings'
-                  ? 'bg-emerald-600 text-white shadow-glow'
+                  ? 'bg-slate-800 text-white font-semibold border border-slate-700 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
               <Coins size={14} />
               <span>{t('tabSavings')}</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/60 font-medium">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/60 font-normal">
                 {savings.length}
               </span>
             </button>
 
             <button
               onClick={() => setActiveSubTab('loans')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
                 activeSubTab === 'loans'
-                  ? 'bg-indigo-600 text-white shadow-glow'
+                  ? 'bg-slate-800 text-white font-semibold border border-slate-700 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
               <Landmark size={14} />
               <span>{t('tabLoans')}</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/60 font-medium">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/60 font-normal">
                 {loans.length}
               </span>
             </button>
@@ -109,7 +109,7 @@ export const LoansSavingsHub: React.FC = () => {
                 setSavingToEdit(null);
                 setShowSavingModal(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
             >
               <Plus size={14} />
               <span>{t('addSavingScheme')}</span>
@@ -120,7 +120,7 @@ export const LoansSavingsHub: React.FC = () => {
                 setLoanToEdit(null);
                 setShowLoanModal(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-glow transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
             >
               <Plus size={14} />
               <span>{t('addLoan')}</span>
@@ -137,16 +137,16 @@ export const LoansSavingsHub: React.FC = () => {
 
       {/* TOP KPI CARDS */}
       {activeSubTab === 'savings' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Total Invested */}
           <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">{t('totalInvested')}</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-950/80 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <Coins size={16} />
+              <span className="text-xs text-slate-400 font-medium">{t('totalInvested')}</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <Coins size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-white">
+            <p className="text-2xl font-bold text-white tracking-tight">
               {formatCurrency(totalSavingsInvested, settings.currency)}
             </p>
             <p className="text-[11px] text-slate-400">Across {savings.length} active schemes</p>
@@ -155,96 +155,96 @@ export const LoansSavingsHub: React.FC = () => {
           {/* Active Chit Funds Target Value */}
           <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">Active Chits Pool Value</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <Layers size={16} />
+              <span className="text-xs text-slate-400 font-medium">Active Chits Pool</span>
+              <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <Layers size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-indigo-300">
+            <p className="text-2xl font-bold text-indigo-300 tracking-tight">
               {formatCurrency(totalChitFundsValue, settings.currency)}
             </p>
             <p className="text-[11px] text-slate-400">{chitFundSchemes.length} rotational chits</p>
           </div>
 
           {/* Total Bulk Prize Payouts Claimed */}
-          <div className="glass-panel rounded-2xl p-4 border border-amber-900/40 bg-amber-950/10 space-y-2">
+          <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-amber-300 font-semibold">{t('totalBulkReceivedKpi')}</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-950 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                <Trophy size={16} />
+              <span className="text-xs text-amber-300 font-medium">{t('totalBulkReceivedKpi')}</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                <Trophy size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-amber-400">
+            <p className="text-2xl font-bold text-amber-400 tracking-tight">
               +{formatCurrency(totalChitBulkReceived, settings.currency)}
             </p>
-            <p className="text-[11px] text-amber-300/80">Lump-sum auction cash received</p>
+            <p className="text-[11px] text-slate-400">Lump-sum auction cash received</p>
           </div>
 
           {/* Scheme Breakdown */}
           <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">Schemes Type</span>
-              <div className="w-8 h-8 rounded-xl bg-teal-950/80 border border-teal-500/30 flex items-center justify-center text-teal-400">
-                <Sparkles size={16} />
+              <span className="text-xs text-slate-400 font-medium">Schemes Type</span>
+              <div className="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+                <Sparkles size={15} />
               </div>
             </div>
-            <p className="text-lg font-black text-white">
+            <p className="text-xl font-bold text-white tracking-tight">
               {chitFundSchemes.length} Chits • {fixedSavingSchemes.length} Fixed
             </p>
-            <p className="text-[11px] text-teal-400">Type 1 Fixed & Type 2 Chits</p>
+            <p className="text-[11px] text-slate-400">Type 1 Fixed & Type 2 Chits</p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Total Loan Liabilities */}
-          <div className="glass-panel rounded-2xl p-4 border border-rose-900/40 bg-rose-950/10 space-y-2">
+          <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-rose-300 font-semibold">{t('totalDebtKpi')}</span>
-              <div className="w-8 h-8 rounded-xl bg-rose-950 border border-rose-500/40 flex items-center justify-center text-rose-400">
-                <TrendingDown size={16} />
+              <span className="text-xs text-rose-300 font-medium">{t('totalDebtKpi')}</span>
+              <div className="w-7 h-7 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                <TrendingDown size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-rose-400">
+            <p className="text-2xl font-bold text-rose-400 tracking-tight">
               {formatCurrency(totalLoanLiability, settings.currency)}
             </p>
-            <p className="text-[11px] text-rose-300/80">{borrowedLoans.length} active borrowed debts</p>
+            <p className="text-[11px] text-slate-400">{borrowedLoans.length} active borrowed debts</p>
           </div>
 
           {/* Money Lent (Receivables) */}
-          <div className="glass-panel rounded-2xl p-4 border border-emerald-900/40 bg-emerald-950/10 space-y-2">
+          <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-emerald-300 font-semibold">{t('totalReceivableKpi')}</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <TrendingUp size={16} />
+              <span className="text-xs text-emerald-300 font-medium">{t('totalReceivableKpi')}</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <TrendingUp size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-emerald-400">
+            <p className="text-2xl font-bold text-emerald-400 tracking-tight">
               +{formatCurrency(totalLoanReceivable, settings.currency)}
             </p>
-            <p className="text-[11px] text-emerald-300/80">{lentLoans.length} loans given to others</p>
+            <p className="text-[11px] text-slate-400">{lentLoans.length} loans given to others</p>
           </div>
 
           {/* Active Loans Count */}
           <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">Total Accounts</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <Landmark size={16} />
+              <span className="text-xs text-slate-400 font-medium">Total Accounts</span>
+              <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <Landmark size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-indigo-300">{loans.length} Loans</p>
+            <p className="text-2xl font-bold text-indigo-300 tracking-tight">{loans.length} Loans</p>
             <p className="text-[11px] text-slate-400">Bank KCC, Gold & Financiers</p>
           </div>
 
           {/* Closed Loans */}
           <div className="glass-panel rounded-2xl p-4 border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">Completed Loans</span>
-              <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-emerald-400">
-                <CheckCircle2 size={16} />
+              <span className="text-xs text-slate-400 font-medium">Completed Loans</span>
+              <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-emerald-400">
+                <CheckCircle2 size={15} />
               </div>
             </div>
-            <p className="text-xl font-black text-white">
+            <p className="text-2xl font-bold text-white tracking-tight">
               {loans.filter(l => l.status === 'closed').length} Closed
             </p>
             <p className="text-[11px] text-slate-400">Fully settled and cleared</p>

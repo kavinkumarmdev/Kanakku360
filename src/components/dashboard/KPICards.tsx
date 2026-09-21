@@ -19,33 +19,28 @@ export const KPICards: React.FC<KPICardsProps> = ({ onNavigate }) => {
   } = useFinance();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
       {/* Total Net Worth */}
       <div
         onClick={() => onNavigate?.('accounts')}
-        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
-          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
-        }`}
+        className="glass-panel rounded-2xl p-4.5 border border-slate-800/80 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900/90 transition-all cursor-pointer shadow-sm group"
         title="View All Accounts"
       >
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-80" />
-        <div className="absolute -top-10 -right-10 w-28 h-28 bg-indigo-500/15 rounded-full blur-2xl group-hover:bg-indigo-500/25 transition-all duration-500" />
-        
-        <div className="flex items-center justify-between relative z-10">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             {t('kpiTotalNetWorth')}
           </span>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-inner group-hover:scale-105 transition-transform">
-            <Wallet size={19} />
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+            <Wallet size={15} />
           </div>
         </div>
 
-        <div className="mt-4 relative z-10">
-          <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+        <div className="mt-3">
+          <h3 className="text-2xl font-bold text-white tracking-tight">
             {formatCurrency(totalNetWorth, settings.currency)}
           </h3>
-          <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0 inline-block" />
+          <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 font-normal">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 inline-block" />
             {t('kpiAcrossAccounts')}
           </p>
         </div>
@@ -54,90 +49,86 @@ export const KPICards: React.FC<KPICardsProps> = ({ onNavigate }) => {
       {/* Income This Month */}
       <div
         onClick={() => onNavigate?.('transactions')}
-        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
-          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
-        }`}
+        className="glass-panel rounded-2xl p-4.5 border border-slate-800/80 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900/90 transition-all cursor-pointer shadow-sm group"
         title="View Ledger & Income Entries"
       >
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-80" />
-        <div className="absolute -top-10 -right-10 w-28 h-28 bg-emerald-500/15 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all duration-500" />
-        
-        <div className="flex items-center justify-between relative z-10">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             {t('kpiIncome')}
           </span>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shadow-inner group-hover:scale-105 transition-transform">
-            <TrendingUp size={19} />
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+            <TrendingUp size={15} />
           </div>
         </div>
 
-        <div className="mt-4 relative z-10">
-          <h3 className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">
+        <div className="mt-3">
+          <h3 className="text-2xl font-bold text-emerald-400 tracking-tight">
             +{formatCurrency(totalIncomeThisMonth, settings.currency)}
           </h3>
-          <p className="text-xs text-emerald-400/90 mt-1.5 flex items-center gap-1 font-semibold">
-            <ArrowUpRight size={14} className="shrink-0" /> {t('kpiInflowRecorded')}
-          </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <ArrowUpRight size={12} className="shrink-0" />
+              {t('kpiInflowRecorded')}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Expense This Month */}
       <div
         onClick={() => onNavigate?.('transactions')}
-        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
-          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
-        }`}
+        className="glass-panel rounded-2xl p-4.5 border border-slate-800/80 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900/90 transition-all cursor-pointer shadow-sm group"
         title="View Ledger & Expenses"
       >
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent opacity-80" />
-        <div className="absolute -top-10 -right-10 w-28 h-28 bg-rose-500/15 rounded-full blur-2xl group-hover:bg-rose-500/25 transition-all duration-500" />
-        
-        <div className="flex items-center justify-between relative z-10">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             {t('kpiExpenses')}
           </span>
-          <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30 shadow-inner group-hover:scale-105 transition-transform">
-            <TrendingDown size={19} />
+          <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
+            <TrendingDown size={15} />
           </div>
         </div>
 
-        <div className="mt-4 relative z-10">
-          <h3 className="text-2xl sm:text-3xl font-black text-rose-400 tracking-tight">
+        <div className="mt-3">
+          <h3 className="text-2xl font-bold text-rose-400 tracking-tight">
             -{formatCurrency(totalExpenseThisMonth, settings.currency)}
           </h3>
-          <p className="text-xs text-rose-400/90 mt-1.5 flex items-center gap-1 font-semibold">
-            <ArrowDownRight size={14} className="shrink-0" /> {t('kpiTotalExpenditures')}
-          </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <ArrowDownRight size={12} className="shrink-0" />
+              {t('kpiTotalExpenditures')}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Net Savings & Savings Rate */}
       <div
         onClick={() => onNavigate?.('budgets')}
-        className={`glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800/80 relative overflow-hidden group shadow-lg ${
-          onNavigate ? 'cursor-pointer transition-all transform hover:-translate-y-0.5' : ''
-        }`}
+        className="glass-panel rounded-2xl p-4.5 border border-slate-800/80 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900/90 transition-all cursor-pointer shadow-sm group"
         title="View Budgets & Limits"
       >
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80" />
-        <div className="absolute -top-10 -right-10 w-28 h-28 bg-amber-500/15 rounded-full blur-2xl group-hover:bg-amber-500/25 transition-all duration-500" />
-        
-        <div className="flex items-center justify-between relative z-10">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            {t('kpiNetSavings')} ({savingsRateThisMonth}%)
-          </span>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-inner group-hover:scale-105 transition-transform">
-            <PiggyBank size={19} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              {t('kpiNetSavings')}
+            </span>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              {savingsRateThisMonth}%
+            </span>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+            <PiggyBank size={15} />
           </div>
         </div>
 
-        <div className="mt-4 relative z-10">
-          <h3 className={`text-2xl sm:text-3xl font-black tracking-tight ${netSavingsThisMonth >= 0 ? 'text-amber-400' : 'text-rose-400'}`}>
+        <div className="mt-3">
+          <h3 className={`text-2xl font-bold tracking-tight ${netSavingsThisMonth >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
             {formatCurrency(netSavingsThisMonth, settings.currency)}
           </h3>
-          <div className="w-full bg-slate-800/80 h-2 rounded-full mt-2.5 overflow-hidden p-0.5 border border-slate-700/40">
+          <div className="w-full bg-slate-800/90 h-1 rounded-full mt-2 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-amber-500 via-emerald-400 to-teal-400 h-full rounded-full transition-all duration-700 shadow-sm"
+              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
               style={{ width: `${Math.min(100, Math.max(0, savingsRateThisMonth))}%` }}
             />
           </div>

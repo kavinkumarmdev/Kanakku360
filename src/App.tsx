@@ -23,7 +23,9 @@ import { GoalList } from './components/goals/GoalList';
 import { GoogleSheetSync } from './components/settings/GoogleSheetSync';
 import { GeneralSettings } from './components/settings/GeneralSettings';
 import { ToastContainer } from './components/common/ToastContainer';
-import type { Transaction } from './types/finance';
+import { QuickAccessBar } from './components/dashboard/QuickAccessBar';
+import { BottomNav } from './components/layout/BottomNav';
+import type { Transaction, TransactionType } from './types/finance';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, isPinLocked, user } = useAuth();
@@ -33,6 +35,11 @@ const MainApp: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState<boolean>(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+  const [txModalPreset, setTxModalPreset] = useState<{
+    type?: TransactionType;
+    categoryId?: string;
+    worker?: string;
+  }>({});
   const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
 
@@ -55,11 +62,37 @@ const MainApp: React.FC = () => {
 
   const handleOpenAddTransaction = () => {
     setTransactionToEdit(null);
+    setTxModalPreset({});
+    setIsTransactionModalOpen(true);
+  };
+
+  const handleOpenAddExpense = () => {
+    setTransactionToEdit(null);
+    setTxModalPreset({ type: 'expense' });
+    setIsTransactionModalOpen(true);
+  };
+
+  const handleOpenAddIncome = () => {
+    setTransactionToEdit(null);
+    setTxModalPreset({ type: 'income' });
+    setIsTransactionModalOpen(true);
+  };
+
+  const handleOpenAddFarmLabor = () => {
+    setTransactionToEdit(null);
+    setTxModalPreset({ type: 'expense', categoryId: 'cat_farm_labor' });
+    setIsTransactionModalOpen(true);
+  };
+
+  const handleOpenAddMilkEntry = () => {
+    setTransactionToEdit(null);
+    setTxModalPreset({ type: 'income', categoryId: 'cat_milk_sale' });
     setIsTransactionModalOpen(true);
   };
 
   const handleOpenEditTransaction = (tx: Transaction) => {
     setTransactionToEdit(tx);
+    setTxModalPreset({});
     setIsTransactionModalOpen(true);
   };
 
@@ -84,30 +117,29 @@ const MainApp: React.FC = () => {
         />
 
         {/* Dynamic Page Views */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 min-w-0 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              {/* Welcome & Overview Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl glass-panel border border-indigo-500/20 shadow-md relative overflow-hidden bg-gradient-to-r from-indigo-950/30 via-slate-900/40 to-slate-900/30">
+              {/* Welcome & Overview Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-2xl shrink-0 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg shrink-0 shadow-sm">
                     {user?.avatar || '👤'}
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                        {t('greeting')}, <span className="text-indigo-400 dark:text-indigo-300 font-black">{user?.name || settings.userName || 'Kavin'}</span>!
+                      <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                        {t('greeting')}, <span className="text-emerald-400">{user?.name || settings.userName || 'Kavin'}</span>
                       </h1>
                       {user?.role && (
-                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 shrink-0">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 font-medium border border-slate-800 shrink-0">
                           {user.role.split('(')[0].trim()}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      {settings.language === 'ta'
-                        ? 'வரவு, செலவு, பண்ணை மற்றும் குடும்ப நிதி கணக்கு நேரலை மேலாண்மை.'
-                        : 'Personal, farm harvests, coolie wages & household accounts overview.'}
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date().toLocaleDateString(settings.language === 'ta' ? 'ta-IN' : 'en-IN', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+                      <span className="hidden sm:inline"> • {settings.language === 'ta' ? 'குடும்பம் & பண்ணை நிதி கண்ணோட்டம்' : 'Family & Agri Financial Overview'}</span>
                     </p>
                   </div>
                 </div>
@@ -116,14 +148,14 @@ const MainApp: React.FC = () => {
                   {(user?.username === 'appa' || user?.name?.toLowerCase().includes('appa') || user?.username === 'amma' || user?.name?.toLowerCase().includes('amma')) ? (
                     <button
                       onClick={() => setActiveTab('farm')}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md hover:shadow-lg"
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-2 shadow-sm cursor-pointer"
                     >
                       <span>🌾 {settings.language === 'ta' ? 'பண்ணை & கால்நடை' : 'Farm & Livestock'}</span>
                     </button>
                   ) : (
                     <button
                       onClick={handleOpenAddTransaction}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-500/20 hover:shadow-lg"
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                     >
                       <span>➕ {t('record')}</span>
                     </button>
@@ -135,6 +167,16 @@ const MainApp: React.FC = () => {
               <UpcomingDueAlerts
                 onPayLoan={() => setActiveTab('loans_savings')}
                 onPayScheme={() => setActiveTab('loans_savings')}
+              />
+
+              {/* ⚡ 1-Tap Quick Easy Access Shortcuts */}
+              <QuickAccessBar
+                onAddExpense={handleOpenAddExpense}
+                onAddIncome={handleOpenAddIncome}
+                onAddFarmLabor={handleOpenAddFarmLabor}
+                onAddMilkEntry={handleOpenAddMilkEntry}
+                onOpenLoansSavings={() => setActiveTab('loans_savings')}
+                onOpenTransfer={() => setIsTransferModalOpen(true)}
               />
 
               {/* KPI Cards */}
@@ -191,11 +233,21 @@ const MainApp: React.FC = () => {
         </main>
       </div>
 
+      {/* Mobile Sticky Bottom Navigation Bar */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenQuickAdd={handleOpenAddTransaction}
+      />
+
       {/* Global Modals */}
       <TransactionModal
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         transactionToEdit={transactionToEdit}
+        initialType={txModalPreset.type}
+        initialCategoryId={txModalPreset.categoryId}
+        initialWorker={txModalPreset.worker}
       />
 
       <TransferModal

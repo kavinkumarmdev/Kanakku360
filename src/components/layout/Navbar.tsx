@@ -44,16 +44,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full glass-panel border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+    <header className="sticky top-0 z-30 w-full glass-panel border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Mobile menu trigger + Brand */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <button
             onClick={onOpenMobileMenu}
-            className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0"
+            className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0 cursor-pointer"
             aria-label="Toggle Navigation Menu"
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
           <div className="shrink-0 min-w-0">
             <BrandLogo size="md" onClick={() => setActiveTab('dashboard')} />
@@ -61,9 +61,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Center: Net Worth badge on large screens */}
-        <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/70 border border-slate-800/90 text-xs shrink-0 shadow-sm">
+        <div className="hidden lg:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs shrink-0 hover:border-slate-700 transition">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
           <span className="text-slate-400 font-medium">{t('netWorth')}:</span>
-          <span className={`font-black tracking-tight ${totalNetWorth >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <span className={`font-bold tracking-tight text-sm ${totalNetWorth >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {formatCurrency(totalNetWorth, settings.currency)}
           </span>
         </div>
@@ -73,11 +74,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Theme Toggle Button - hidden on mobile, visible on sm+ */}
           <button
             onClick={toggleTheme}
-            className="hidden sm:flex items-center justify-center p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-slate-200 transition shadow-sm shrink-0"
-            title={settings.theme === 'light' ? 'Switch to Dark Mode (🌙)' : 'Switch to Light Mode (☀️)'}
+            className="hidden sm:flex items-center justify-center p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition shrink-0 cursor-pointer"
+            title={settings.theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
           >
             {settings.theme === 'light' ? (
-              <Moon size={15} className="text-indigo-500 shrink-0" />
+              <Moon size={15} className="text-indigo-400 shrink-0" />
             ) : (
               <Sun size={15} className="text-amber-400 shrink-0" />
             )}
@@ -86,10 +87,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Language Switcher Pill - hidden on mobile, visible on sm+ */}
           <button
             onClick={toggleLanguage}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-slate-200 transition shrink-0"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition shrink-0 cursor-pointer"
             title="Switch between தமிழ் and English"
           >
-            <Globe size={14} className="text-indigo-400 shrink-0" />
+            <Globe size={14} className="text-slate-400 shrink-0" />
             <span className="whitespace-nowrap">{settings.language === 'ta' ? 'தமிழ்' : 'English'}</span>
           </button>
 
@@ -114,16 +115,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? (settings.language === 'ta' ? 'ஒத்திசைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்க கிளிக் செய்க.' : `Sync error: ${syncState.errorMessage || 'Failed'}. Click to retry.`)
                 : (settings.language === 'ta' ? `கூகிள் தாள் ஒத்திசைக்கப்பட்டது (${syncState.lastSynced || ''}). மீண்டும் ஒத்திசைக்க கிளிக் செய்க.` : `Google Sheet Synced (${syncState.lastSynced || 'Up to date'}). Click to sync again.`)
             }
-            className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold border transition-all shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-medium border transition-all shrink-0 cursor-pointer ${
               syncState.status === 'syncing'
-                ? 'bg-indigo-950/70 border-indigo-500/60 text-indigo-200 shadow-md shadow-indigo-500/20'
+                ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300'
                 : !settings.sheetUrl
                 ? 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
                 : syncState.pendingChangesCount > 0
-                ? 'bg-gradient-to-r from-amber-500/20 via-indigo-950/60 to-indigo-900/40 border-amber-500/70 text-amber-300 hover:border-amber-400 shadow-md shadow-amber-500/10 pulse-glow-amber'
+                ? 'bg-amber-950/40 border-amber-500/50 text-amber-300 hover:bg-amber-950/60'
                 : syncState.status === 'error'
-                ? 'bg-rose-950/60 border-rose-500/50 text-rose-300 hover:bg-rose-950/80'
-                : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950/60 shadow-sm'
+                ? 'bg-rose-950/50 border-rose-500/40 text-rose-300'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
             }`}
           >
             {syncState.status === 'syncing' ? (
@@ -131,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : !settings.sheetUrl ? (
               <CloudOff className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             ) : syncState.pendingChangesCount > 0 ? (
-              <UploadCloud className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
+              <UploadCloud className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             ) : syncState.status === 'error' ? (
               <CloudOff className="w-3.5 h-3.5 text-rose-400 shrink-0" />
             ) : (
@@ -152,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Mobile notification badge if pending changes exist */}
             {settings.sheetUrl && syncState.pendingChangesCount > 0 && (
-              <span className="md:hidden flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
+              <span className="md:hidden flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold">
                 {syncState.pendingChangesCount > 9 ? '9+' : syncState.pendingChangesCount}
               </span>
             )}
@@ -161,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Quick Add Button */}
           <button
             onClick={onOpenQuickAdd}
-            className="flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs sm:text-sm font-bold shadow-glow transition-all transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap shrink-0"
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold transition whitespace-nowrap shrink-0 cursor-pointer shadow-sm"
             title={t('record')}
           >
             <Plus size={16} className="shrink-0" />
@@ -171,10 +172,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Settings Icon - hidden on mobile */}
           <button
             onClick={() => setActiveTab('settings')}
-            className="hidden sm:flex p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700 transition shrink-0"
+            className="hidden sm:flex p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0 cursor-pointer"
             title={t('settings')}
           >
-            <SettingsIcon size={18} />
+            <SettingsIcon size={17} />
           </button>
 
           {/* User Profile Avatar with Dropdown */}

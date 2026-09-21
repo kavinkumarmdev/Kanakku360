@@ -40,38 +40,45 @@ export const AccountQuickView: React.FC<AccountQuickViewProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+      <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
         {accounts.map(account => {
           const isNegative = Number(account.balance) < 0;
           return (
             <div
               key={account.id}
-              className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/80 hover:border-indigo-500/40 hover:bg-slate-900/70 transition-all flex items-center justify-between gap-3 group shadow-sm"
+              className="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/80 hover:border-indigo-500/40 hover:bg-slate-900/75 transition-all transform hover:-translate-y-0.5 flex items-center justify-between gap-3 group shadow-sm"
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3.5 min-w-0">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/10 group-hover:scale-105 transition-transform"
-                  style={{ backgroundColor: `${account.color || '#6366f1'}18` }}
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 group-hover:scale-110 transition-transform shadow-inner"
+                  style={{ backgroundColor: `${account.color || '#6366f1'}22` }}
                 >
                   <IconRenderer
                     name={account.icon || 'Building2'}
                     color={account.color || '#6366f1'}
-                    size={18}
+                    size={20}
                   />
                 </div>
                 <div className="min-w-0 truncate">
-                  <h4 className="text-xs sm:text-sm font-semibold text-slate-200 group-hover:text-white transition truncate">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-100 group-hover:text-white transition truncate">
                     {account.name}
                   </h4>
-                  <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider truncate mt-0.5">
-                    {account.type.replace('_', ' ')} {account.accountNumber ? `• ${account.accountNumber}` : ''}
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800/90 text-slate-300 font-semibold uppercase tracking-wider truncate">
+                      {account.type.replace('_', ' ')}
+                    </span>
+                    {account.accountNumber && (
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        •• {account.accountNumber.slice(-4)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="text-right shrink-0">
                 <span
-                  className={`text-xs sm:text-sm font-black whitespace-nowrap ${
+                  className={`text-xs sm:text-base font-black whitespace-nowrap block ${
                     isNegative ? 'text-rose-400' : 'text-slate-100'
                   }`}
                 >

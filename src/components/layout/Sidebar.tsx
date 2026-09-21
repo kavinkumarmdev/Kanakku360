@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex flex-col h-full justify-between p-4">
       <div className="space-y-6">
         {/* Navigation list */}
-        <nav className="space-y-1.5">
+        <nav className="space-y-1">
           {navItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -74,27 +74,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-semibold transition-all group ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-[13px] font-medium transition-all group relative cursor-pointer ${
                   isActive
-                    ? 'bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-500/25 border border-indigo-400/30'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/70 border border-transparent'
+                    ? 'bg-slate-800/90 text-white font-semibold border border-slate-700/70 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
                 }`}
               >
+                {/* Active left indicator pill */}
+                {isActive && (
+                  <span className="absolute left-0 inset-y-2 w-1 rounded-r-full bg-emerald-500" />
+                )}
+
                 <div className="flex items-center gap-2.5 min-w-0 pr-1">
-                  <Icon
-                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                      isActive ? 'text-white' : item.highlight ? 'text-amber-400' : 'text-slate-400 group-hover:text-indigo-400'
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                      isActive
+                        ? 'bg-emerald-500/15 text-emerald-400'
+                        : 'text-slate-400 group-hover:text-slate-200'
                     }`}
-                  />
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                  </div>
                   <span className="whitespace-nowrap">{t(item.labelKey)}</span>
                 </div>
 
                 {item.badge !== null && item.badge !== undefined && (
                   <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full font-bold shrink-0 ml-1.5 ${
+                    className={`text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-1.5 ${
                       isActive
-                        ? 'bg-indigo-950/80 text-indigo-100 border border-indigo-400/20'
-                        : 'bg-slate-800/90 text-slate-400 group-hover:bg-slate-700'
+                        ? 'bg-slate-700 text-slate-200'
+                        : 'bg-slate-800/80 text-slate-400 border border-slate-700/40'
                     }`}
                   >
                     {item.badge}
@@ -102,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
 
                 {item.highlight && (
-                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold animate-pulse shrink-0 ml-1.5">
+                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-semibold shrink-0 ml-1.5 border border-amber-500/30">
                     {t('setupPrompt')}
                   </span>
                 )}
@@ -113,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer System Status & User Profile */}
-      <div className="space-y-2.5 pt-4 border-t border-slate-800/80">
+      <div className="space-y-2 pt-4 border-t border-slate-800">
         {/* Live System Indicator */}
         <div
           onClick={() => {
@@ -123,59 +132,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
               setActiveTab('settings');
             }
           }}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/70 hover:bg-slate-900 border border-slate-800/90 text-xs transition cursor-pointer group shadow-sm"
+          className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs transition-all cursor-pointer group shadow-sm"
           title={settings.sheetUrl ? 'Click to sync now with Google Sheet' : 'Click to connect Google Sheet'}
         >
-          <div
-            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-              syncState.status === 'syncing'
-                ? 'bg-indigo-400 animate-spin'
-                : !settings.sheetUrl
-                ? 'bg-slate-500'
-                : syncState.pendingChangesCount > 0
-                ? 'bg-amber-400 animate-pulse'
-                : 'bg-emerald-400'
-            }`}
-          />
+          <div className="relative flex items-center justify-center shrink-0">
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${
+                syncState.status === 'syncing'
+                  ? 'bg-indigo-400 animate-ping'
+                  : !settings.sheetUrl
+                  ? 'bg-slate-500'
+                  : syncState.pendingChangesCount > 0
+                  ? 'bg-amber-400'
+                  : 'bg-emerald-400'
+              }`}
+            />
+          </div>
           <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold text-slate-200 block truncate group-hover:text-white">
+            <span className="text-[11px] font-semibold text-slate-300 block truncate group-hover:text-white">
               {!settings.sheetUrl
-                ? (settings.language === 'ta' ? 'உள்ளிருப்பு சேமிப்பு (ஆஃப்லைன்)' : 'Local Storage Mode')
+                ? (settings.language === 'ta' ? 'உள்ளிருப்பு சேமிப்பு' : 'Local Storage')
                 : syncState.status === 'syncing'
-                ? (settings.language === 'ta' ? 'ஒத்திசைகிறது...' : 'Syncing with Sheet...')
+                ? (settings.language === 'ta' ? 'ஒத்திசைகிறது...' : 'Syncing...')
                 : syncState.pendingChangesCount > 0
-                ? (settings.language === 'ta' ? `${syncState.pendingChangesCount} மாற்றங்கள் ஒத்திசைக்க தயார்` : `${syncState.pendingChangesCount} changes waiting to sync`)
+                ? (settings.language === 'ta' ? `${syncState.pendingChangesCount} மாற்றங்கள் தயார்` : `${syncState.pendingChangesCount} changes to sync`)
                 : settings.autoSync
-                ? (settings.language === 'ta' ? 'தானியங்கி ஒத்திசைவு செயலில்' : 'Auto-Sync Mode Active')
-                : (settings.language === 'ta' ? 'கையேடு ஒத்திசைவு முறை' : 'Manual Sync Mode')}
+                ? (settings.language === 'ta' ? 'தானியங்கி ஒத்திசைவு' : 'Auto-Sync Active')
+                : (settings.language === 'ta' ? 'Google Sheet இணைக்கப்பட்டுள்ளது' : 'Google Sheet Connected')}
             </span>
-            <span className="text-[10px] text-slate-400 block truncate">
+            <span className="text-[10px] text-slate-400 block truncate font-normal">
               {settings.sheetUrl && syncState.pendingChangesCount > 0
                 ? (settings.language === 'ta' ? 'கிளிக் செய்து ஒத்திசைக்கவும்' : 'Click to push changes')
                 : settings.lastSyncedAt
                 ? `Last: ${settings.lastSyncedAt}`
-                : 'Ready'}
+                : 'Cloud Ready'}
             </span>
           </div>
         </div>
 
         {/* User profile capsule */}
-        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/80">
           <div className="flex items-center gap-2.5 min-w-0 pr-1">
-            <div className="w-8 h-8 rounded-lg bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-base shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-sm shrink-0">
               {user?.avatar || '👤'}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-white truncate">{user?.name || 'Kavin'}</p>
+              <p className="text-xs font-semibold text-white truncate">{user?.name || 'Kavin'}</p>
               <p className="text-[10px] text-slate-400 truncate">{user?.role?.split('(')[0] || 'Member'}</p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 transition shrink-0"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition shrink-0 cursor-pointer"
             title={t('authLogout')}
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
           </button>
         </div>
       </div>

@@ -22,12 +22,18 @@ interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionToEdit?: Transaction | null;
+  initialType?: TransactionType;
+  initialCategoryId?: string;
+  initialWorker?: string;
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
   transactionToEdit,
+  initialType,
+  initialCategoryId,
+  initialWorker,
 }) => {
   const {
     categories,
@@ -117,12 +123,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setProductionQty(transactionToEdit.productionQuantity ? String(transactionToEdit.productionQuantity) : '');
       setProductionRate(transactionToEdit.productionUnitRate ? String(transactionToEdit.productionUnitRate) : '');
     } else {
-      setType('expense');
+      const activeType = initialType || 'expense';
+      setType(activeType);
       setAmount('');
       const defaultAcc = accounts.find(a => a.isDefault) || accounts[0];
       setAccountId(defaultAcc ? defaultAcc.id : '');
-      const expenseCats = categories.filter(c => c.type === 'expense');
-      setCategoryId(expenseCats.length > 0 ? expenseCats[0].id : '');
+      const relevantCats = categories.filter(c => c.type === (activeType === 'income' ? 'income' : 'expense'));
+      if (initialCategoryId && categories.some(c => c.id === initialCategoryId)) {
+        setCategoryId(initialCategoryId);
+      } else {
+        setCategoryId(relevantCats.length > 0 ? relevantCats[0].id : '');
+      }
       setToAccountId(accounts.length > 1 ? accounts[1].id : '');
       setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
@@ -132,7 +143,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setFieldId('');
       setTransactionCrop('');
       setTreeId('');
-      setWorkerName('');
+      setWorkerName(initialWorker || '');
       setWorkType('');
       setWorkerCount('');
       setWageRate('');
@@ -142,7 +153,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setProductionQty('');
       setProductionRate('');
     }
-  }, [transactionToEdit, isOpen, accounts, categories]);
+  }, [transactionToEdit, isOpen, accounts, categories, initialType, initialCategoryId, initialWorker]);
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
@@ -410,11 +421,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Amount Input */}
+          {/* Amount Input with Quick Preset Buttons */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              {t('amountHeader')} ({settings.currencySymbol})
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                {t('amountHeader')} ({settings.currencySymbol})
+              </label>
+              <span className="text-[11px] text-slate-400 font-medium">
+                {settings.language === 'ta' ? 'விரைவு தொகை (Quick Add):' : 'Quick Presets:'}
+              </span>
+            </div>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
                 {settings.currencySymbol}
@@ -427,13 +443,39 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 placeholder="0.00"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-lg font-bold text-white placeholder-slate-500 focus:outline-none"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-lg font-black text-white placeholder-slate-500 focus:outline-none"
                 autoFocus
               />
             </div>
+
+            {/* Quick Amount Adders */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {[50, 100, 200, 500, 1000, 2000, 5000].map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => {
+                    const current = Number(amount) || 0;
+                    setAmount(String(current + val));
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-indigo-600/30 text-xs font-bold text-slate-300 hover:text-indigo-300 border border-slate-800 hover:border-indigo-500/40 transition cursor-pointer"
+                >
+                  +{settings.currencySymbol}{val}
+                </button>
+              ))}
+              {amount && Number(amount) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAmount('')}
+                  className="px-2 py-1 rounded-lg bg-rose-950/40 text-[11px] font-bold text-rose-400 hover:bg-rose-900/50 border border-rose-500/30 transition cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Category Selector with "+ New Category" button */}
+          {/* Category Selector with Quick Chips + "+ New Category" button */}
           {type !== 'transfer' && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -443,12 +485,35 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowNewCategoryModal(true)}
-                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition"
+                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition cursor-pointer"
                 >
                   <Plus size={13} />
                   <span>{t('addNewCategory')}</span>
                 </button>
               </div>
+
+              {/* Fast 1-Tap Category Grid (Top 8 most relevant) */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-2.5 max-h-24 overflow-y-auto p-1 bg-slate-900/40 rounded-xl border border-slate-800/80">
+                {availableCategories.slice(0, 10).map(cat => {
+                  const isSelected = categoryId === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategoryId(cat.id)}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md ring-1 ring-indigo-400'
+                          : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color || '#6366f1' }} />
+                      <span className="truncate max-w-[130px]">{getCategoryName(cat.id, cat.name).split('(')[0].trim()}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <SearchableSelect
                 options={availableCategories.map(cat => ({
                   id: cat.id,
@@ -928,6 +993,22 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 onChange={e => setDescription(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl glass-input text-sm text-slate-100 focus:outline-none"
               />
+              {/* Quick Description Suggestions */}
+              <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                {(settings.language === 'ta'
+                  ? ['மளிகை', 'பெட்ரோல்', 'டீ/காபி', 'காய்கறி', 'பண்ணை கூலி', 'உரம்/DAP', 'பால் வரவு', 'EB பில்', 'ரீசார்ஜ்']
+                  : ['Grocery', 'Fuel/Petrol', 'Tea/Coffee', 'Vegetables', 'Farm Coolie', 'Fertilizer', 'Milk Sale', 'EB Bill', 'Recharge']
+                ).map(suggestion => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => setDescription(suggestion)}
+                    className="px-2 py-0.5 rounded-md bg-slate-900/80 hover:bg-slate-800 text-[10px] font-medium text-slate-400 hover:text-indigo-300 border border-slate-800 transition cursor-pointer"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
