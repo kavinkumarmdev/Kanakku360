@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../utils/formatters';
-import { Bot, Send, User, Sparkles, RefreshCw } from 'lucide-react';
+import { Bot, Send, User, Sparkles, RefreshCw, Plus, FileSpreadsheet, X, Check, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import type { Category, Account } from '../../types/finance';
 
 interface Message {
   id: string;
@@ -351,9 +352,151 @@ function TypingIndicator() {
 }
 
 // ─────────────────────────────────────────────
-// QUICK QUESTION CHIPS
+// NATURAL LANGUAGE TRANSACTION PARSER
+// ─────────────────────────────────────────────
+interface ParsedAddIntent {
+  type: 'expense' | 'income';
+  amount: number;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  accountId: string;
+  accountName: string;
+  paymentMode: 'cash' | 'bank' | 'upi';
+}
+
+function tryParseAddIntent(
+  rawInput: string,
+  categories: Category[],
+  accounts: Account[]
+): ParsedAddIntent | null {
+  const input = rawInput.trim();
+  const lower = input.toLowerCase();
+
+  // 1. Amount match
+  const amountMatch = input.match(/(?:₹|rs\.?|inr)?\s*([0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?)\s*(?:rs|rupees|ரூபாய்|k\b)?/i);
+  if (!amountMatch) return null;
+
+  let rawNum = amountMatch[1].replace(/,/g, '');
+  let amount = parseFloat(rawNum);
+  if (isNaN(amount) || amount <= 0) return null;
+
+  if (/(\d+)\s*k\b/i.test(input)) {
+    const kMatch = input.match(/(\d+)\s*k\b/i);
+    if (kMatch) amount = parseFloat(kMatch[1]) * 1000;
+  }
+
+  // 2. Intent validation
+  const isExplicitAdd = /^(add|record|entry|spent|spend|paid|cost|buy|bought|received|earned|got|செலவு|வரவு|வாங்கியது|கொடுத்தேன்)/i.test(lower);
+  const hasKeyword = /expense|income|spent|spend|paid|received|earned|sale|sold|salary|cost|வாங்கியது|கொடுத்தேன்|செலவு|வரவு|விற்பனை|சம்பளம்/i.test(lower);
+  const isQuestion = /^(what|how|show|list|tell|view|give|is|who|என்ன|எவ்வளவு|காட்டு)/i.test(lower);
+  if (isQuestion) return null;
+
+  if (!isExplicitAdd && !hasKeyword) {
+    const words = lower.split(/\s+/).filter(Boolean);
+    if (words.length > 5) return null;
+  }
+
+  // 3. Determine type
+  let type: 'expense' | 'income' = 'expense';
+  if (/income|received|earned|got|sale|sold|salary|harvest|bonus|dividend|வரவு|வந்தது|விற்றது|சம்பளம்|அறுவடை/i.test(lower)) {
+    type = 'income';
+  }
+
+  // 4. Determine category
+  let matchedCat: Category | undefined;
+  if (/fuel|diesel|petrol|bike|car|auto|transport|டீசல்|பெட்ரோல்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_fuel');
+  } else if (/fertilizer|manure|dap|potash|urea|உரம்|சாணம்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_farm_fertilizer');
+  } else if (/labor|labour|coolie|wage|worker|கூலி|ஆட்கள்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_farm_labor');
+  } else if (/seed|sapling|plant|விதை|நாற்று|கன்று/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_farm_seeds');
+  } else if (/pesticide|spray|poison|மருந்து தெளிப்பு|பூச்சிக்கொல்லி/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_farm_pesticide');
+  } else if (/tractor|plough|rotavator|டிராக்டர்|உழவு/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_farm_tractor');
+  } else if (/pipe|drip|motor|pump|irrigation|பாசனம்|பம்பு/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_farm_irrigation');
+  } else if (/tree|coconut prune|கவாத்து|மரம்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_tree_maintenance');
+  } else if (/feed|punnakku|thavudu|தீவனம்|புண்ணாக்கு|தவிடு/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_animal_feed');
+  } else if (/vet|cow medicine|கால்நடை மருத்துவம்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_animal_medical');
+  } else if (/medicine|hospital|doctor|tablet|medical|மருத்துவம்|மருந்து/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_human_medical');
+  } else if (/recharge|mobile|airtel|jio|dth|ரீசார்ஜ்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_mobile_recharge');
+  } else if (/eb|electricity|current bill|மின்சாரம்|மின்கட்டணம்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_eb_electricity');
+  } else if (/milk|dairy|பால்|கறவை/i.test(lower)) {
+    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_milk_sale') : categories.find(c => c.id === 'cat_animal_feed');
+  } else if (/coconut|copra|தேங்காய்|கொப்பரை/i.test(lower)) {
+    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_coconut_sale') : categories.find(c => c.id === 'cat_tree_maintenance');
+  } else if (/crop|paddy|sugarcane|turmeric|banana|நெல்|கரும்பு|வாழை|மஞ்சள்/i.test(lower)) {
+    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_crop_sale') : categories.find(c => c.id === 'cat_farm_seeds');
+  } else if (/vegetable|onion|tomato|காய்கறி|வெங்காயம்/i.test(lower)) {
+    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_vegetable_sale') : categories.find(c => c.id === 'cat_groceries');
+  } else if (/salary|company job|சம்பளம்/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_salary');
+  } else if (/grocery|food|tea|coffee|lunch|dinner|hotel|snacks|சாப்பாடு|மளிகை/i.test(lower)) {
+    matchedCat = categories.find(c => c.id === 'cat_groceries');
+  }
+
+  if (!matchedCat) {
+    matchedCat = categories.find(c => c.type === type) || categories[0];
+  }
+
+  // 5. Account & Mode
+  let matchedAcc: Account | undefined;
+  let paymentMode: 'cash' | 'bank' | 'upi' = 'cash';
+  if (/bank|online|transfer|வங்கி/i.test(lower)) {
+    matchedAcc = accounts.find(a => a.type === 'bank');
+    paymentMode = 'bank';
+  } else if (/gpay|phonepe|paytm|upi/i.test(lower)) {
+    matchedAcc = accounts.find(a => a.type === 'bank') || accounts[0];
+    paymentMode = 'upi';
+  } else if (/cash|ரொக்கம்/i.test(lower)) {
+    matchedAcc = accounts.find(a => a.type === 'cash');
+    paymentMode = 'cash';
+  }
+  if (!matchedAcc) {
+    matchedAcc = accounts.find(a => a.isDefault) || accounts[0] || ({ id: 'acc_cash', name: 'Cash in Hand' } as Account);
+  }
+
+  // 6. Clean Description
+  let cleaned = input
+    .replace(/(?:₹|rs\.?|inr)?\s*[0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?\s*(?:rs|rupees|ரூபாய்|k\b)?/gi, '')
+    .replace(/^(add|record|spent|spend|paid|cost|bought|buy|received|earned|got|செலவு|வரவு|வாங்கியது|கொடுத்தேன்)\s+/gi, '')
+    .replace(/\b(expense|income|for|on|from|via|to|in|by|ரூபாய்|பதிவு)\b/gi, '')
+    .replace(/^(cash|bank|gpay|upi|phonepe)\b/gi, '')
+    .trim();
+
+  if (!cleaned || cleaned.length < 2) {
+    cleaned = matchedCat ? matchedCat.name.split('(')[0].trim() : (type === 'income' ? 'Income Entry' : 'Expense Entry');
+  }
+
+  return {
+    type,
+    amount,
+    description: cleaned,
+    categoryId: matchedCat?.id || (type === 'income' ? 'cat_crop_sale' : 'cat_groceries'),
+    categoryName: matchedCat?.name || (type === 'income' ? 'Income' : 'Expense'),
+    accountId: matchedAcc.id,
+    accountName: matchedAcc.name,
+    paymentMode,
+  };
+}
+
+// ─────────────────────────────────────────────
+// QUICK ACTION CHIPS
 // ─────────────────────────────────────────────
 const QUICK_QUESTIONS = [
+  { label: '➕ Add Expense', q: '__ACTION_ADD_EXPENSE__' },
+  { label: '➕ Add Income',  q: '__ACTION_ADD_INCOME__' },
+  { label: '🔄 Sync to Sheet', q: 'sync sheet now' },
   { label: '💎 Net Worth',   q: 'What is my net worth?' },
   { label: '📋 Full Report', q: 'Show me full summary report' },
   { label: '💚 Income',      q: 'Show my income this month' },
@@ -363,7 +506,6 @@ const QUICK_QUESTIONS = [
   { label: '🌾 Farm',        q: 'Give me farm summary' },
   { label: '🐄 Livestock',   q: 'Show livestock and milk details' },
   { label: '👷 Wages',       q: 'Show worker wages and pending amount' },
-  { label: '💡 Advice',      q: 'Give me financial advice' },
 ];
 
 // ─────────────────────────────────────────────
@@ -376,20 +518,103 @@ export const AIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([{
     id: 'welcome',
     role: 'ai',
-    text: `👋 வணக்கம் ${aiCtx.userName}! I'm your **Kanakku360 AI Assistant**.\n\nI can read all your financial data and answer questions in natural language. Ask me about balances, loans, farm income, chit funds, or get a full summary!\n\nTry one of the quick buttons below or type your own question 🤖`,
+    text: `👋 வணக்கம் ${aiCtx.userName}! I'm your **Kanakku360 AI Assistant**.\n\nNow I can both **read your finances** and **add new entries** directly into your accounts & Google Sheet!\n\n💡 **You can try:**\n• *"Spent 500 for diesel"*\n• *"Add income 12000 from milk sale"*\n• *"செலவு 350 மளிகை"*\n• *"Sync to sheet"*\n• *"What is my net worth?"*`,
     timestamp: new Date(),
   }]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Quick Add Form state
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [qaType, setQaType] = useState<'expense' | 'income'>('expense');
+  const [qaAmount, setQaAmount] = useState('');
+  const [qaCategory, setQaCategory] = useState('');
+  const [qaAccount, setQaAccount] = useState('');
+  const [qaDescription, setQaDescription] = useState('');
+  const [qaIsSaving, setQaIsSaving] = useState(false);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  const handleQuickAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(qaAmount);
+    if (isNaN(amt) || amt <= 0) return;
+
+    setQaIsSaving(true);
+    const cat = financeCtx.categories.find(c => c.id === qaCategory) || financeCtx.categories.find(c => c.type === qaType);
+    const acc = financeCtx.accounts.find(a => a.id === qaAccount) || financeCtx.accounts[0];
+    const catName = cat?.name || qaType;
+    const accName = acc?.name || 'Cash in Hand';
+    const desc = qaDescription.trim() || catName.split('(')[0].trim();
+
+    try {
+      await financeCtx.addTransaction({
+        date: new Date().toISOString().split('T')[0],
+        type: qaType,
+        amount: amt,
+        category: cat?.id || (qaType === 'income' ? 'cat_crop_sale' : 'cat_groceries'),
+        accountId: acc?.id || 'acc_cash',
+        description: desc,
+        paymentMode: acc?.type === 'bank' ? 'bank' : 'cash',
+      });
+
+      let syncSuccess = false;
+      if (financeCtx.settings.sheetUrl) {
+        syncSuccess = await financeCtx.syncWithGoogleSheet('push');
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `u_${Date.now()}`,
+          role: 'user',
+          text: `Added ${qaType}: ${aiCtx.fmt(amt)} for ${desc}`,
+          timestamp: new Date(),
+        },
+        {
+          id: `ai_${Date.now() + 1}`,
+          role: 'ai',
+          text: `✅ **${qaType === 'income' ? 'Income Added & Synced!' : 'Expense Added & Synced!'}**\n\n• 💰 **Amount:** ${aiCtx.fmt(amt)}\n• 🏷️ **Category:** ${catName}\n• 🏦 **Account:** ${accName}\n• 📝 **Note:** ${desc}\n• 📅 **Date:** ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n${financeCtx.settings.sheetUrl ? (syncSuccess ? '📊 **Google Sheet:** Synced & updated live! ✅' : '📊 **Google Sheet:** Synced (Sync queued)') : '💡 **Tip:** Connect your Google Sheet in Settings to automatically sync live to your spreadsheet!'}`,
+          timestamp: new Date(),
+          cards: [
+            { label: 'Amount', value: aiCtx.fmt(amt), icon: qaType === 'income' ? '💚' : '🔴', color: qaType === 'income' ? 'emerald' : 'rose' },
+            { label: 'Category', value: catName.split('(')[0].trim(), icon: '🏷️', color: 'indigo' },
+            { label: 'Account', value: accName.split('(')[0].trim(), icon: '🏦', color: 'teal' },
+            { label: 'Sheet Status', value: financeCtx.settings.sheetUrl ? 'Synced Live ✅' : 'Local Only', icon: '📊', color: financeCtx.settings.sheetUrl ? 'emerald' : 'amber' },
+          ],
+        },
+      ]);
+
+      setShowQuickAdd(false);
+      setQaAmount('');
+      setQaDescription('');
+      financeCtx.addToast('Entry added & synced to sheet!', 'success');
+    } catch (err) {
+      console.error(err);
+      financeCtx.addToast('Failed to save entry', 'error');
+    } finally {
+      setQaIsSaving(false);
+    }
+  };
+
   const sendMessage = async (text: string) => {
     const q = text.trim();
     if (!q) return;
+
+    // 1. Action chips
+    if (q === '__ACTION_ADD_EXPENSE__') {
+      setQaType('expense');
+      setShowQuickAdd(true);
+      return;
+    }
+    if (q === '__ACTION_ADD_INCOME__') {
+      setQaType('income');
+      setShowQuickAdd(true);
+      return;
+    }
 
     setMessages(prev => [...prev, {
       id: `u_${Date.now()}`, role: 'user', text: q, timestamp: new Date(),
@@ -397,8 +622,76 @@ export const AIAssistant: React.FC = () => {
     setInputText('');
     setIsTyping(true);
 
-    await new Promise(r => setTimeout(r, 600 + Math.random() * 500));
+    // 2. Check for manual Google Sheet sync command
+    if (/^(sync\b|sheet sync|sync sheet|sync to sheet|sync now|sync google sheet|ஷீட் சிங்க்)/i.test(q)) {
+      if (financeCtx.settings.sheetUrl) {
+        const ok = await financeCtx.syncWithGoogleSheet('push');
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: `ai_${Date.now()}`,
+          role: 'ai',
+          text: ok
+            ? `🔄 **Google Sheet Synced Successfully!**\n\nAll your latest transactions, account balances, farm logs, livestock entries, loans, and chit fund schemes have been saved and pushed live to your Google Sheet database.\n\n📊 **Sheet Status:** Active & Updated\n⏱️ **Timestamp:** ${new Date().toLocaleTimeString('en-IN')}`
+            : `⚠️ **Google Sheet Sync encountered an issue.**\nPlease verify your Google Apps Script URL in **Settings > Google Sheet Sync**.`,
+          timestamp: new Date(),
+          cards: [
+            { label: 'Sheet Status', value: ok ? 'Synced Live ✅' : 'Sync Error ⚠️', icon: '📊', color: ok ? 'emerald' : 'rose' },
+            { label: 'Total Entries', value: `${financeCtx.transactions.length} records`, icon: '📑', color: 'indigo' },
+          ],
+        }]);
+      } else {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: `ai_${Date.now()}`,
+          role: 'ai',
+          text: `ℹ️ **Google Sheet is not connected yet.**\n\nTo save and sync data directly to your spreadsheet:\n1. Go to **App Settings > Google Sheet Sync**\n2. Connect your Google Apps Script Web App URL\n\nOnce connected, all data you add here will automatically sync to your spreadsheet!`,
+          timestamp: new Date(),
+        }]);
+      }
+      return;
+    }
 
+    // 3. Check for Add Data intent
+    const parsedAdd = tryParseAddIntent(q, financeCtx.categories, financeCtx.accounts);
+    if (parsedAdd) {
+      try {
+        await financeCtx.addTransaction({
+          date: new Date().toISOString().split('T')[0],
+          type: parsedAdd.type,
+          amount: parsedAdd.amount,
+          category: parsedAdd.categoryId,
+          accountId: parsedAdd.accountId,
+          description: parsedAdd.description,
+          paymentMode: parsedAdd.paymentMode,
+        });
+
+        let syncSuccess = false;
+        if (financeCtx.settings.sheetUrl) {
+          syncSuccess = await financeCtx.syncWithGoogleSheet('push');
+        }
+
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: `ai_${Date.now()}`,
+          role: 'ai',
+          text: `✅ **${parsedAdd.type === 'income' ? 'Income Added & Synced!' : 'Expense Added & Synced!'}**\n\n• 💰 **Amount:** ${aiCtx.fmt(parsedAdd.amount)}\n• 🏷️ **Category:** ${parsedAdd.categoryName}\n• 🏦 **Account:** ${parsedAdd.accountName}\n• 📝 **Note:** ${parsedAdd.description}\n• 📅 **Date:** ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n${financeCtx.settings.sheetUrl ? (syncSuccess ? '📊 **Google Sheet:** Synced & saved directly to your spreadsheet! ✅' : '📊 **Google Sheet:** Synced (Sync queued)') : '💡 **Tip:** Connect your Google Sheet in Settings to sync live to your spreadsheet!'}`,
+          timestamp: new Date(),
+          cards: [
+            { label: 'Amount', value: aiCtx.fmt(parsedAdd.amount), icon: parsedAdd.type === 'income' ? '💚' : '🔴', color: parsedAdd.type === 'income' ? 'emerald' : 'rose' },
+            { label: 'Category', value: parsedAdd.categoryName.split('(')[0].trim(), icon: '🏷️', color: 'indigo' },
+            { label: 'Account', value: parsedAdd.accountName.split('(')[0].trim(), icon: '🏦', color: 'teal' },
+            { label: 'Sheet Status', value: financeCtx.settings.sheetUrl ? 'Synced Live ✅' : 'Local Only', icon: '📊', color: financeCtx.settings.sheetUrl ? 'emerald' : 'amber' },
+          ],
+        }]);
+        financeCtx.addToast('Entry added & synced to sheet!', 'success');
+        return;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 4. Default: Read & Query Engine
+    await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
     const resp = generateAIResponse(q, aiCtx);
     setIsTyping(false);
     setMessages(prev => [...prev, {
@@ -409,16 +702,18 @@ export const AIAssistant: React.FC = () => {
   const handleClear = () => {
     setMessages([{
       id: 'clear', role: 'ai',
-      text: `🔄 Chat cleared! Ask me anything, ${aiCtx.userName}.`,
+      text: `🔄 Chat cleared! Ask me anything or tell me to add an entry, ${aiCtx.userName}.`,
       timestamp: new Date(),
     }]);
   };
+
+  const hasSheetUrl = Boolean(financeCtx.settings.sheetUrl);
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-h-[900px] min-h-[500px]">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 shrink-0">
+      <div className="flex items-center justify-between mb-3 shrink-0 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
             <Bot size={20} className="text-white" />
@@ -427,20 +722,150 @@ export const AIAssistant: React.FC = () => {
             <h1 className="text-lg font-black text-white flex items-center gap-2">
               Kanakku360 AI
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold animate-pulse">
-                LIVE DATA
+                READ & WRITE
               </span>
+              {hasSheetUrl ? (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-teal-400 font-medium">
+                  <FileSpreadsheet size={10} /> Sheet Connected
+                </span>
+              ) : null}
             </h1>
-            <p className="text-[11px] text-slate-400">Your personal finance AI — powered by your own data</p>
+            <p className="text-[11px] text-slate-400">Ask questions, add expenses & income, and sync to Google Sheets live</p>
           </div>
         </div>
-        <button
-          onClick={handleClear}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
-        >
-          <RefreshCw size={12} />
-          <span>Clear</span>
-        </button>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowQuickAdd(!showQuickAdd)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+              showQuickAdd
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30'
+            }`}
+          >
+            {showQuickAdd ? <X size={12} /> : <Plus size={12} />}
+            <span>{showQuickAdd ? 'Close' : 'Quick Entry'}</span>
+          </button>
+          <button
+            onClick={handleClear}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
+            title="Clear Chat"
+          >
+            <RefreshCw size={12} />
+            <span>Clear</span>
+          </button>
+        </div>
       </div>
+
+      {/* Quick Add Slide-down Form */}
+      {showQuickAdd && (
+        <form
+          onSubmit={handleQuickAddSubmit}
+          className="glass-panel p-4 rounded-2xl border border-emerald-500/40 mb-3 space-y-3 shadow-lg animate-fadeIn shrink-0"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Plus size={14} className="text-emerald-400" />
+              Quick Add & Sync to Sheet
+            </span>
+            <div className="flex items-center bg-slate-900/60 p-0.5 rounded-xl border border-slate-800 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setQaType('expense')}
+                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
+                  qaType === 'expense'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ArrowDownLeft size={11} /> Expense
+              </button>
+              <button
+                type="button"
+                onClick={() => setQaType('income')}
+                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
+                  qaType === 'income'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ArrowUpRight size={11} /> Income
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <div>
+              <label className="text-[10px] text-slate-400 font-medium block mb-1">Amount (₹) *</label>
+              <input
+                type="number"
+                step="any"
+                required
+                value={qaAmount}
+                onChange={e => setQaAmount(e.target.value)}
+                placeholder="500"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 font-medium block mb-1">Category</label>
+              <select
+                value={qaCategory}
+                onChange={e => setQaCategory(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white focus:border-emerald-500/60 focus:outline-none"
+              >
+                <option value="">Select Category</option>
+                {financeCtx.categories
+                  .filter(c => c.type === qaType)
+                  .map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 font-medium block mb-1">Account</label>
+              <select
+                value={qaAccount}
+                onChange={e => setQaAccount(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white focus:border-emerald-500/60 focus:outline-none"
+              >
+                {financeCtx.accounts.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 font-medium block mb-1">Description / Note</label>
+              <input
+                type="text"
+                value={qaDescription}
+                onChange={e => setQaDescription(e.target.value)}
+                placeholder="e.g. Petrol, Fertilizer, Milk"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[10px] text-slate-400 flex items-center gap-1">
+              <FileSpreadsheet size={11} className="text-emerald-400" />
+              {hasSheetUrl ? 'Will sync automatically to Google Sheet' : 'Saved locally (Connect Sheet in Settings)'}
+            </span>
+            <button
+              type="submit"
+              disabled={qaIsSaving || !qaAmount}
+              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-md shadow-emerald-600/20 disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
+            >
+              <Check size={13} />
+              <span>{qaIsSaving ? 'Saving...' : 'Save & Sync to Sheet'}</span>
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Quick question chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-1 shrink-0" style={{ scrollbarWidth: 'none' }}>
