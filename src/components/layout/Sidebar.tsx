@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsMobileOpen,
 }) => {
   const { transactions, accounts, budgets, goals, loans, savings, pendingWageTransactions, settings, updateSettings, t } = useFinance();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   const toggleLanguage = () => {
     const nextLang = settings.language === 'ta' ? 'en' : 'ta';

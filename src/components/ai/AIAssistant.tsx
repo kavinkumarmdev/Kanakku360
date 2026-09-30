@@ -84,7 +84,7 @@ function generateAIResponse(
     totalChitFundsValue, totalPendingWages, totalAnimalCount,
     totalDailyMilkLiters, totalFarmExpense, totalCropIncome,
     totalTreeHarvestIncome, totalMilkSalesIncome, totalBalance,
-    activeLoans, activeSavings, accounts, loans, savings,
+    activeLoans, activeSavings, accounts,
     goals, budgets, fields, livestock, workers, familyMembers,
     transactions, monthTx, topExpCat, userName,
   } = ctx;
