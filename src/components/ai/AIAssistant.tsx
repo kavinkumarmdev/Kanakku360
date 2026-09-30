@@ -339,7 +339,7 @@ function TypingIndicator() {
       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-lg">
         <Bot size={14} className="text-white" />
       </div>
-      <div className="px-4 py-3 rounded-2xl rounded-bl-sm bg-slate-800 border border-slate-700">
+      <div className="px-4 py-3 rounded-2xl rounded-bl-sm glass-panel border border-slate-700/60 shadow-sm">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -449,7 +449,7 @@ export const AIAssistant: React.FC = () => {
             key={q.q}
             onClick={() => sendMessage(q.q)}
             disabled={isTyping}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 hover:border-emerald-500/40 text-xs text-slate-300 hover:text-white whitespace-nowrap transition shrink-0 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 hover:border-emerald-500/40 text-xs text-slate-300 hover:text-white whitespace-nowrap transition shrink-0 cursor-pointer disabled:opacity-50"
           >
             {q.label}
           </button>
@@ -479,7 +479,7 @@ export const AIAssistant: React.FC = () => {
               <div className={`px-4 py-3 rounded-2xl text-xs leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-indigo-600 text-white rounded-br-sm'
-                  : 'bg-slate-800/90 border border-slate-700/80 text-slate-200 rounded-bl-sm'
+                  : 'glass-panel border border-slate-700/60 text-slate-200 rounded-bl-sm shadow-sm'
               }`}>
                 {msg.role === 'ai'
                   ? <RenderMarkdown text={msg.text} />
@@ -518,7 +518,7 @@ export const AIAssistant: React.FC = () => {
               placeholder="Ask anything about your finances..."
               disabled={isTyping}
               autoFocus
-              className="w-full pl-9 pr-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 focus:border-emerald-500/60 text-sm text-white placeholder-slate-500 focus:outline-none transition"
+              className="w-full pl-9 pr-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700 hover:border-slate-600 focus:border-emerald-500/60 text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition"
             />
           </div>
           <button

@@ -415,20 +415,65 @@ html.light [class*="text-amber-400"],
   color: #b45309 !important;
 }
 
-/* User Role & Pill Badges in Light Mode */
-html.light span.bg-slate-800,
-html.light div.bg-slate-800,
-[data-theme='light'] span.bg-slate-800,
-[data-theme='light'] div.bg-slate-800 {
-  background-color: #e2e8f0 !important;
-  color: #1e293b !important;
+/* Universal Slate 800 & 700 Elements in Light Mode */
+html.light [class*="bg-slate-800"],
+[data-theme='light'] [class*="bg-slate-800"] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
-html.light span.bg-slate-800\/80,
-[data-theme='light'] span.bg-slate-800\/80 {
+html.light [class*="bg-slate-700"],
+[data-theme='light'] [class*="bg-slate-700"] {
   background-color: #e2e8f0 !important;
-  color: #1e293b !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light [class*="hover:bg-slate-800"]:hover,
+[data-theme='light'] [class*="hover:bg-slate-800"]:hover,
+html.light [class*="hover:bg-slate-700"]:hover,
+[data-theme='light'] [class*="hover:bg-slate-700"]:hover,
+html.light [class*="bg-slate-800"]:hover,
+[data-theme='light'] [class*="bg-slate-800"]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Sidebar Nav Items in Light Mode */
+html.light aside nav button[class*="bg-slate-800"],
+[data-theme='light'] aside nav button[class*="bg-slate-800"] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light aside nav button[class*="bg-slate-800"] span,
+[data-theme='light'] aside nav button[class*="bg-slate-800"] span {
+  color: #0f172a !important;
+}
+
+html.light aside nav button[class*="bg-slate-800"] span[class*="bg-slate-700"],
+[data-theme='light'] aside nav button[class*="bg-slate-800"] span[class*="bg-slate-700"],
+html.light aside nav button[class*="bg-slate-800"] span[class*="bg-slate-800"],
+[data-theme='light'] aside nav button[class*="bg-slate-800"] span[class*="bg-slate-800"] {
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* Teal Alert & Pill Tints in Light Mode */
+html.light [class*="bg-teal-950"],
+[data-theme='light'] [class*="bg-teal-950"] {
+  background-color: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+}
+
+html.light [class*="text-teal-300"],
+html.light [class*="text-teal-400"],
+[data-theme='light'] [class*="text-teal-300"],
+[data-theme='light'] [class*="text-teal-400"] {
+  color: #0d9488 !important;
 }
 
 /* Modals & Backdrops in Light Mode */
