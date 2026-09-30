@@ -36,6 +36,19 @@ export const UpcomingDueAlerts: React.FC<UpcomingDueAlertsProps> = ({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Helper: get interval in months from SavingFrequency
+  const getFrequencyMonths = (freq: string): number => {
+    if (freq === 'every_1_month' || freq === 'monthly') return 1;
+    if (freq === 'every_2_month') return 2;
+    if (freq === 'every_3_month' || freq === 'quarterly') return 3;
+    if (freq === 'every_4_month') return 4;
+    if (freq === 'every_5_month') return 5;
+    if (freq === 'every_6_month') return 6;
+    if (freq === 'every_7_month') return 7;
+    if (freq === 'yearly') return 12;
+    return 1; // fallback
+  };
+
   const dueItems: DueItem[] = [];
 
   // 1. Process Loans
@@ -88,10 +101,27 @@ export const UpcomingDueAlerts: React.FC<UpcomingDueAlertsProps> = ({
     .forEach(sch => {
       let targetDueDateStr = sch.dueDate;
       if (!targetDueDateStr) {
-        const dayOfMonth = sch.dueDayOfMonth || (sch.startDate ? new Date(sch.startDate).getDate() : 10);
-        const nextDue = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+        // Use frequency-aware interval: start from startDate, find the next due
+        const freqMonths = getFrequencyMonths(sch.frequency);
+        const startDt = new Date(sch.startDate);
+        startDt.setHours(0, 0, 0, 0);
+        const dayOfMonth = sch.dueDayOfMonth || startDt.getDate();
+        const completedCount = (sch.installments || []).length;
+
+        // Next installment is based on completed count + 1 interval
+        let nextDue = new Date(
+          startDt.getFullYear(),
+          startDt.getMonth() + completedCount * freqMonths,
+          dayOfMonth
+        );
+
+        // If somehow already past, advance one interval
         if (nextDue < today) {
-          nextDue.setMonth(nextDue.getMonth() + 1);
+          nextDue = new Date(
+            nextDue.getFullYear(),
+            nextDue.getMonth() + freqMonths,
+            dayOfMonth
+          );
         }
         targetDueDateStr = nextDue.toISOString().split('T')[0];
       }
@@ -101,8 +131,9 @@ export const UpcomingDueAlerts: React.FC<UpcomingDueAlertsProps> = ({
         dueDate.setHours(0, 0, 0, 0);
         const diffMs = dueDate.getTime() - today.getTime();
         const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const alertWindow = 15; // always show within 15 days
 
-        if (diffDays <= 15) {
+        if (diffDays <= alertWindow) {
           const monthlyDue = Math.round(sch.totalValue / (sch.totalInstallments || 1));
           dueItems.push({
             id: `scheme_${sch.id}`,

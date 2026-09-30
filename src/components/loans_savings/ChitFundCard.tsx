@@ -203,22 +203,24 @@ export const ChitFundCard: React.FC<ChitFundCardProps> = ({ scheme, onEdit }) =>
 
       {/* Action Footer Buttons */}
       <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit(scheme)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition"
             title={t('editSavingScheme')}
           >
-            <Edit2 size={13} />
+            <Edit2 size={12} />
+            <span>Edit</span>
           </button>
           <button
             onClick={() => {
               if (confirm(`Remove scheme "${scheme.name}"?`)) deleteSavingScheme(scheme.id);
             }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-bold text-xs shadow-sm transition"
             title="Delete Scheme"
           >
-            <Trash2 size={13} />
+            <Trash2 size={12} />
+            <span>Remove</span>
           </button>
         </div>
 

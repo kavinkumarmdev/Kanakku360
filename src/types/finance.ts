@@ -121,24 +121,24 @@ export interface Transaction {
   productionUnitRate?: number; // Rate per L or per egg
 
   targetType?:
-    | 'farm_labor'
-    | 'farm_fertilizer'
-    | 'farm_seeds'
-    | 'farm_pesticide'
-    | 'farm_tractor'
-    | 'farm_irrigation'
-    | 'tree_maintenance'
-    | 'tree_harvest'
-    | 'animal_medical'
-    | 'animal_feed'
-    | 'animal_purchase'
-    | 'animal_sale'
-    | 'human_medical'
-    | 'mobile_recharge'
-    | 'crop_sale'
-    | 'milk_sale'
-    | 'egg_sale'
-    | 'general';
+  | 'farm_labor'
+  | 'farm_fertilizer'
+  | 'farm_seeds'
+  | 'farm_pesticide'
+  | 'farm_tractor'
+  | 'farm_irrigation'
+  | 'tree_maintenance'
+  | 'tree_harvest'
+  | 'animal_medical'
+  | 'animal_feed'
+  | 'animal_purchase'
+  | 'animal_sale'
+  | 'human_medical'
+  | 'mobile_recharge'
+  | 'crop_sale'
+  | 'milk_sale'
+  | 'egg_sale'
+  | 'general';
 }
 
 export interface WorkTypeOption {
@@ -291,19 +291,19 @@ export interface CropHistoryEntry {
   startDate?: string;
   endDate?: string;
   duration?: string; // e.g. "11 Months (01/01/2024 to 01/12/2024)"
-  
+
   // Financial P&L breakdown
   totalInvestment?: number; // Sum of fertilizers, labor, seeds, tractor, pesticides
   fertilizerExpense?: number;
   laborExpense?: number;
   seedExpense?: number;
   otherExpense?: number;
-  
+
   harvestYield?: string; // e.g. "300 Bunches / வாழைத்தார்", "40 Bags"
   harvestIncome?: number; // Total revenue from crop sale e.g. ₹95,000
   netProfitLoss?: number; // harvestIncome - totalInvestment e.g. +₹56,500
   profitMarginPct?: number; // (netProfitLoss / totalInvestment) * 100
-  
+
   reason?: string; // e.g. "Harvest completed / அறுவடை முடிந்தது", "Crop rotation", "Season end"
   hasBoundaryCoconut?: boolean;
   boundaryTreeCount?: number;
@@ -447,7 +447,16 @@ export interface Loan {
 // SAVINGS & CHIT FUNDS (சேமிப்பு & ஏலச் சீட்டு முதலீடுகள்)
 // ----------------------------------------------------
 export type SavingSchemeType = 'fixed' | 'chit_fund'; // Type 1: Fixed/RD/FD vs Type 2: Chit Fund / Rotational Lump-sum
-export type SavingFrequency = 'monthly' | 'weekly' | 'quarterly' | 'yearly';
+export type SavingFrequency =
+  | 'every_1_month'
+  | 'every_2_month'
+  | 'every_3_month'
+  | 'every_4_month'
+  | 'every_5_month'
+  | 'every_6_month'
+  | 'every_7_month'
+  | 'weekly'
+  | 'yearly';
 export type SavingStatus = 'active' | 'completed';
 
 export interface SavingInstallment {

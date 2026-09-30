@@ -21,7 +21,7 @@ export const SavingModal: React.FC<SavingModalProps> = ({
   const [institution, setInstitution] = useState<string>('');
   const [totalValue, setTotalValue] = useState<string>('500000');
   const [totalInstallments, setTotalInstallments] = useState<string>('20');
-  const [frequency, setFrequency] = useState<SavingFrequency>('monthly');
+  const [frequency, setFrequency] = useState<SavingFrequency>('every_1_month');
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState<string>('');
 
@@ -41,7 +41,7 @@ export const SavingModal: React.FC<SavingModalProps> = ({
       setInstitution('');
       setTotalValue('500000');
       setTotalInstallments('20');
-      setFrequency('monthly');
+      setFrequency('every_1_month');
       setStartDate(new Date().toISOString().split('T')[0]);
       setNotes('');
     }
@@ -215,10 +215,15 @@ export const SavingModal: React.FC<SavingModalProps> = ({
                 onChange={e => setFrequency(e.target.value as SavingFrequency)}
                 className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white focus:outline-none"
               >
-                <option value="monthly" className="bg-slate-900">{t('freqMonthly')}</option>
-                <option value="weekly" className="bg-slate-900">{t('freqWeekly')}</option>
-                <option value="quarterly" className="bg-slate-900">{t('freqQuarterly')}</option>
-                <option value="yearly" className="bg-slate-900">{t('freqYearly')}</option>
+                <option value="every_1_month" className="bg-slate-900">Every 1 Month (Monthly)</option>
+                <option value="every_2_month" className="bg-slate-900">Every 2 Months</option>
+                <option value="every_3_month" className="bg-slate-900">Every 3 Months (Quarterly)</option>
+                <option value="every_4_month" className="bg-slate-900">Every 4 Months</option>
+                <option value="every_5_month" className="bg-slate-900">Every 5 Months</option>
+                <option value="every_6_month" className="bg-slate-900">Every 6 Months</option>
+                <option value="every_7_month" className="bg-slate-900">Every 7 Months</option>
+                <option value="weekly" className="bg-slate-900">Weekly</option>
+                <option value="yearly" className="bg-slate-900">Yearly</option>
               </select>
             </div>
 
