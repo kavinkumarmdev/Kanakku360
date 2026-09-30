@@ -22,6 +22,7 @@ import { TransferModal } from './components/accounts/TransferModal';
 import { GoalList } from './components/goals/GoalList';
 import { GoogleSheetSync } from './components/settings/GoogleSheetSync';
 import { GeneralSettings } from './components/settings/GeneralSettings';
+import { AIAssistant } from './components/ai/AIAssistant';
 import { ToastContainer } from './components/common/ToastContainer';
 import { QuickAccessBar } from './components/dashboard/QuickAccessBar';
 import { BottomNav } from './components/layout/BottomNav';
@@ -227,9 +228,9 @@ const MainApp: React.FC = () => {
 
           {activeTab === 'goals' && <GoalList />}
 
-          {activeTab === 'sync' && <GoogleSheetSync />}
-
+          {activeTab === 'sync'     && <GoogleSheetSync />}
           {activeTab === 'settings' && <GeneralSettings />}
+          {activeTab === 'ai'       && <AIAssistant />}
         </main>
       </div>
 

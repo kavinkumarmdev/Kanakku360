@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   Globe,
+  BrainCircuit,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
@@ -46,14 +47,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const navItems: { id: string; labelKey: TranslationKey; icon: any; badge: number | null; highlight?: boolean }[] = [
-    { id: 'dashboard', labelKey: 'navDashboard', icon: LayoutDashboard, badge: null },
-    { id: 'farm', labelKey: 'navFarm', icon: Sprout, badge: pendingWageTransactions.length > 0 ? pendingWageTransactions.length : null },
-    { id: 'transactions', labelKey: 'navTransactions', icon: Receipt, badge: transactions.length },
-    { id: 'loans_savings', labelKey: 'navLoansSavings', icon: Coins, badge: (loans.length + savings.length) > 0 ? (loans.length + savings.length) : null },
-    { id: 'budgets', labelKey: 'navBudgets', icon: PieChart, badge: budgets.length },
-    { id: 'accounts', labelKey: 'navAccounts', icon: Wallet, badge: accounts.length },
-    { id: 'goals', labelKey: 'navGoals', icon: Target, badge: goals.length },
-    { id: 'settings', labelKey: 'navSettings', icon: Settings, badge: null },
+    { id: 'dashboard',    labelKey: 'navDashboard',    icon: LayoutDashboard, badge: null },
+    { id: 'farm',         labelKey: 'navFarm',         icon: Sprout,          badge: pendingWageTransactions.length > 0 ? pendingWageTransactions.length : null },
+    { id: 'transactions', labelKey: 'navTransactions', icon: Receipt,         badge: transactions.length },
+    { id: 'loans_savings',labelKey: 'navLoansSavings', icon: Coins,           badge: (loans.length + savings.length) > 0 ? (loans.length + savings.length) : null },
+    { id: 'budgets',      labelKey: 'navBudgets',      icon: PieChart,        badge: budgets.length },
+    { id: 'accounts',     labelKey: 'navAccounts',     icon: Wallet,          badge: accounts.length },
+    { id: 'goals',        labelKey: 'navGoals',        icon: Target,          badge: goals.length },
+    { id: 'ai',           labelKey: 'navAI',          icon: BrainCircuit,    badge: null },
+    { id: 'settings',     labelKey: 'navSettings',     icon: Settings,        badge: null },
   ];
 
   const handleNavClick = (tabId: string) => {

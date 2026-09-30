@@ -6,6 +6,7 @@ import {
   Receipt,
   Plus,
   Coins,
+  BrainCircuit,
 } from 'lucide-react';
 
 interface BottomNavProps {
@@ -97,7 +98,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {/* 5. Loans & Chit Funds */}
         <button
           onClick={() => setActiveTab('loans_savings')}
-          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all relative cursor-pointer ${
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative cursor-pointer ${
             activeTab === 'loans_savings'
               ? 'text-white font-semibold'
               : 'text-slate-400 hover:text-slate-200 font-normal'
@@ -113,6 +114,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </div>
           <span className="text-[10px] mt-0.5 whitespace-nowrap">
             {isTa ? 'கடன்/சீட்டு' : 'Loans/Chit'}
+          </span>
+        </button>
+
+        {/* 6. AI Assistant */}
+        <button
+          onClick={() => setActiveTab('ai')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'ai'
+              ? 'text-white font-semibold'
+              : 'text-slate-400 hover:text-slate-200 font-normal'
+          }`}
+        >
+          <BrainCircuit size={19} className={activeTab === 'ai' ? 'text-emerald-400' : ''} />
+          <span className="text-[10px] mt-0.5 whitespace-nowrap">
+            {isTa ? 'AI' : 'AI'}
           </span>
         </button>
       </div>
