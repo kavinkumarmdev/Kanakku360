@@ -13,6 +13,7 @@ import type {
   TreeHarvestEntry,
   FarmLivestock,
   RentalProperty,
+  RentHistoryEntry,
 } from '../types/finance';
 
 export interface SheetFullPayload {
@@ -29,6 +30,7 @@ export interface SheetFullPayload {
   workers?: FarmWorker[];
   familyMembers?: FamilyMember[];
   rentalProperties?: RentalProperty[];
+  rentHistory?: RentHistoryEntry[];
   settings?: Partial<AppSettings> | Partial<AppSettings>[];
 }
 
@@ -304,6 +306,21 @@ function normalizePayload(data: Partial<SheetFullPayload>): SheetFullPayload {
     createdAt: rp.createdAt ? String(rp.createdAt) : undefined,
   }));
 
+  const rentHistory: RentHistoryEntry[] = safeArray(data.rentHistory).map((rh: any) => ({
+    id: String(rh.id || ''),
+    propertyId: String(rh.propertyId || ''),
+    propertyName: String(rh.propertyName || ''),
+    tenantName: rh.tenantName ? String(rh.tenantName) : undefined,
+    periodMonth: rh.periodMonth ? String(rh.periodMonth) : undefined,
+    date: String(rh.date || ''),
+    amount: Number(rh.amount) || 0,
+    paymentMode: rh.paymentMode || 'cash',
+    accountId: rh.accountId ? String(rh.accountId) : undefined,
+    transactionId: rh.transactionId ? String(rh.transactionId) : undefined,
+    notes: rh.notes ? String(rh.notes) : undefined,
+    createdAt: rh.createdAt ? String(rh.createdAt) : undefined,
+  }));
+
   return {
     transactions,
     accounts,
@@ -318,6 +335,7 @@ function normalizePayload(data: Partial<SheetFullPayload>): SheetFullPayload {
     workers,
     familyMembers,
     rentalProperties,
+    rentHistory,
     settings: data.settings,
   };
 }
@@ -448,6 +466,26 @@ export const GoogleSheetApiService = {
       }));
     }
 
+    // Flatten all rental payments across properties so every rent transaction is stored row-by-row in RentHistory tab
+    const rentHistoryRows: RentHistoryEntry[] = Array.isArray(payload.rentHistory) && payload.rentHistory.length > 0
+      ? payload.rentHistory
+      : (payload.rentalProperties || []).flatMap(prop =>
+          (prop.payments || []).map(p => ({
+            id: p.id,
+            propertyId: prop.id,
+            propertyName: prop.name,
+            tenantName: p.tenantName || prop.tenantName || '',
+            periodMonth: p.periodMonth || '',
+            date: p.date,
+            amount: p.amount,
+            paymentMode: p.paymentMode || 'cash',
+            accountId: p.accountId || '',
+            transactionId: p.transactionId || '',
+            notes: p.notes || '',
+            createdAt: p.date,
+          }))
+        );
+
     const bodyData = {
       action: 'syncAll',
       payload: {
@@ -464,6 +502,7 @@ export const GoogleSheetApiService = {
         loans: Array.isArray(payload.loans) ? payload.loans : [],
         savings: Array.isArray(payload.savings) ? payload.savings : [],
         rentalProperties: Array.isArray(payload.rentalProperties) ? payload.rentalProperties : [],
+        rentHistory: rentHistoryRows,
         settings: settingsArray,
       },
     };
@@ -565,6 +604,29 @@ export const GoogleSheetApiService = {
       return JSON.parse(text);
     } catch {
       return { status: 'success', message: 'Deletion dispatched' };
+    }
+  },
+
+  /**
+   * Record a single rent payment entry to Google Sheet
+   */
+  recordRentPayment: async (scriptUrl: string, paymentRecord: RentHistoryEntry): Promise<SheetApiResponse> => {
+    if (!scriptUrl || !scriptUrl.trim()) {
+      return { status: 'success', message: 'Saved locally' };
+    }
+
+    const cleanUrl = checkAndSanitizeUrl(scriptUrl);
+    const response = await fetch(cleanUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'recordRentPayment', payload: paymentRecord }),
+    });
+
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { status: 'success', message: 'Rent payment dispatched' };
     }
   },
 };

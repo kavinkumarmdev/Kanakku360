@@ -548,6 +548,21 @@ export interface RentalPayment {
   transactionId?: string;
 }
 
+export interface RentHistoryEntry {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  tenantName?: string;
+  periodMonth?: string;
+  date: string;
+  amount: number;
+  paymentMode: PaymentMode;
+  accountId?: string;
+  transactionId?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
 export interface RentalProperty {
   id: string;
   name: string; // e.g. "Main Bazaar Shop #1", "Upstairs 2BHK House"

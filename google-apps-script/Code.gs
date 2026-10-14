@@ -39,6 +39,7 @@ const SHEET_NAMES = {
   LOANS: 'Loans',
   SAVINGS: 'Savings',
   RENTAL_PROPERTIES: 'RentalProperties',
+  RENT_HISTORY: 'RentHistory',
   SETTINGS: 'Settings'
 };
 
@@ -80,6 +81,7 @@ function doGet(e) {
             loans: getSheetData(ss.getSheetByName(SHEET_NAMES.LOANS)),
             savings: getSheetData(ss.getSheetByName(SHEET_NAMES.SAVINGS)),
             rentalProperties: getSheetData(ss.getSheetByName(SHEET_NAMES.RENTAL_PROPERTIES)),
+            rentHistory: getSheetData(ss.getSheetByName(SHEET_NAMES.RENT_HISTORY)),
             settings: getSheetData(ss.getSheetByName(SHEET_NAMES.SETTINGS))
           },
           timestamp: new Date().toISOString()
@@ -126,8 +128,35 @@ function doPost(e) {
         if (payload.loans) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.LOANS), payload.loans, getLoanHeaders());
         if (payload.savings) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.SAVINGS), payload.savings, getSavingHeaders());
         if (payload.rentalProperties) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.RENTAL_PROPERTIES), payload.rentalProperties, getRentalPropertyHeaders());
+        
+        // Synchronize dedicated RentHistory table for long-term ledger & auditing
+        let rentHistoryData = payload.rentHistory;
+        if (!rentHistoryData && payload.rentalProperties) {
+          rentHistoryData = [];
+          payload.rentalProperties.forEach(function(prop) {
+            if (prop.payments && Array.isArray(prop.payments)) {
+              prop.payments.forEach(function(p) {
+                rentHistoryData.push({
+                  id: p.id || '',
+                  propertyId: prop.id || '',
+                  propertyName: prop.name || '',
+                  tenantName: p.tenantName || prop.tenantName || '',
+                  periodMonth: p.periodMonth || '',
+                  date: p.date || '',
+                  amount: p.amount || 0,
+                  paymentMode: p.paymentMode || 'cash',
+                  accountId: p.accountId || '',
+                  transactionId: p.transactionId || '',
+                  notes: p.notes || '',
+                  createdAt: p.date || new Date().toISOString()
+                });
+              });
+            }
+          });
+        }
+        if (rentHistoryData) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.RENT_HISTORY), rentHistoryData, getRentHistoryHeaders());
         if (payload.settings) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.SETTINGS), payload.settings, getSettingsHeaders());
-        response.message = 'All 14 Kanakku360 tables synchronized successfully!';
+        response.message = 'All 15 Kanakku360 tables synchronized successfully!';
         break;
 
       case 'addTransaction':
@@ -143,6 +172,11 @@ function doPost(e) {
       case 'deleteTransaction':
         deleteRowById(ss.getSheetByName(SHEET_NAMES.TRANSACTIONS), payload.id);
         response.message = 'Transaction deleted from Google Sheet.';
+        break;
+
+      case 'recordRentPayment':
+        appendRow(ss.getSheetByName(SHEET_NAMES.RENT_HISTORY), payload, getRentHistoryHeaders());
+        response.message = 'Rent payment recorded in RentHistory sheet.';
         break;
 
       case 'updateAccountBalance':
@@ -186,6 +220,7 @@ function initializeSheetsIfMissing(ss) {
   ensureSheetWithHeaders(ss, SHEET_NAMES.LOANS, getLoanHeaders(), '#F43F5E');
   ensureSheetWithHeaders(ss, SHEET_NAMES.SAVINGS, getSavingHeaders(), '#14B8A6');
   ensureSheetWithHeaders(ss, SHEET_NAMES.RENTAL_PROPERTIES, getRentalPropertyHeaders(), '#0891B2');
+  ensureSheetWithHeaders(ss, SHEET_NAMES.RENT_HISTORY, getRentHistoryHeaders(), '#059669');
   ensureSheetWithHeaders(ss, SHEET_NAMES.SETTINGS, getSettingsHeaders(), '#475569');
 }
 
@@ -295,6 +330,14 @@ function getRentalPropertyHeaders() {
     'depositAmount', 'depositReceivedDate', 'depositAccountId', 
     'propertyTaxAmount', 'propertyTaxDueDate', 'taxAssessmentNumber',
     'leaseStartDate', 'leaseEndDate', 'payments', 'settlements', 
+    'notes', 'createdAt'
+  ];
+}
+
+function getRentHistoryHeaders() {
+  return [
+    'id', 'propertyId', 'propertyName', 'tenantName', 'periodMonth', 
+    'date', 'amount', 'paymentMode', 'accountId', 'transactionId', 
     'notes', 'createdAt'
   ];
 }

@@ -214,3 +214,26 @@ id,userId,commitmentType,name,institution,principalOrTargetAmount,currentAmount,
 # - notes: Important terms, auction notes, or milestone comments
 # - createdAt: Timestamp of commitment registration (ISO 8601 string)
 # - updatedAt: Timestamp of last status modification (ISO 8601 string)
+
+
+# ------------------------------------------------------------------------------
+# 9) RentHistory (Dedicated Rent Collection Ledger & Historical Audit)
+# ------------------------------------------------------------------------------
+# Dedicated chronological ledger storing every rent collection, month-wise payment,
+# tenant name, payment mode, and transaction reference for tax filing and audit.
+RentHistory
+id,propertyId,propertyName,tenantName,periodMonth,date,amount,paymentMode,accountId,transactionId,notes,createdAt
+# Fields Explanation:
+# - id: Unique rent payment record ID (e.g., pay_shop01_oct26)
+# - propertyId: Foreign key referencing AssetsMaster.id / RentalProperties.id (e.g., ast_prop_shop01)
+# - propertyName: Name of property (e.g., "Main Bazaar Commercial Shop #1", "2-BHK House")
+# - tenantName: Tenant name who paid (e.g., "R. Murugan")
+# - periodMonth: Rental billing month (e.g., "October 2026", "November 2026")
+# - date: Payment received date (YYYY-MM-DD)
+# - amount: Rent amount paid in INR (e.g., 8500.00)
+# - paymentMode: Mode of payment (cash, upi, bank)
+# - accountId: Deposited account referencing AccountsMaster.id (e.g., acc_bank_sbi)
+# - transactionId: Linked main ledger transaction ID in TransactionsMaster (e.g., tx_rent_088)
+# - notes: Remarks or receipts (e.g., "GPay UPI ref #82910")
+# - createdAt: Entry creation timestamp (ISO 8601 string)
+
