@@ -38,6 +38,7 @@ const SHEET_NAMES = {
   GOALS: 'SavingsGoals',
   LOANS: 'Loans',
   SAVINGS: 'Savings',
+  RENTAL_PROPERTIES: 'RentalProperties',
   SETTINGS: 'Settings'
 };
 
@@ -78,6 +79,7 @@ function doGet(e) {
             goals: getSheetData(ss.getSheetByName(SHEET_NAMES.GOALS)),
             loans: getSheetData(ss.getSheetByName(SHEET_NAMES.LOANS)),
             savings: getSheetData(ss.getSheetByName(SHEET_NAMES.SAVINGS)),
+            rentalProperties: getSheetData(ss.getSheetByName(SHEET_NAMES.RENTAL_PROPERTIES)),
             settings: getSheetData(ss.getSheetByName(SHEET_NAMES.SETTINGS))
           },
           timestamp: new Date().toISOString()
@@ -123,8 +125,9 @@ function doPost(e) {
         if (payload.goals) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.GOALS), payload.goals, getGoalHeaders());
         if (payload.loans) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.LOANS), payload.loans, getLoanHeaders());
         if (payload.savings) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.SAVINGS), payload.savings, getSavingHeaders());
+        if (payload.rentalProperties) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.RENTAL_PROPERTIES), payload.rentalProperties, getRentalPropertyHeaders());
         if (payload.settings) overwriteSheetData(ss.getSheetByName(SHEET_NAMES.SETTINGS), payload.settings, getSettingsHeaders());
-        response.message = 'All 13 Kanakku360 tables synchronized successfully!';
+        response.message = 'All 14 Kanakku360 tables synchronized successfully!';
         break;
 
       case 'addTransaction':
@@ -182,6 +185,7 @@ function initializeSheetsIfMissing(ss) {
   ensureSheetWithHeaders(ss, SHEET_NAMES.GOALS, getGoalHeaders(), '#EC4899');
   ensureSheetWithHeaders(ss, SHEET_NAMES.LOANS, getLoanHeaders(), '#F43F5E');
   ensureSheetWithHeaders(ss, SHEET_NAMES.SAVINGS, getSavingHeaders(), '#14B8A6');
+  ensureSheetWithHeaders(ss, SHEET_NAMES.RENTAL_PROPERTIES, getRentalPropertyHeaders(), '#0891B2');
   ensureSheetWithHeaders(ss, SHEET_NAMES.SETTINGS, getSettingsHeaders(), '#475569');
 }
 
@@ -218,7 +222,9 @@ function getTransactionHeaders() {
     'paymentMode', 'tags', 'memberId', 'memberName', 'fieldId', 'fieldName', 
     'cropId', 'cropType', 'treeId', 'treeName', 'livestockId', 'livestockName', 
     'productionType', 'productionQuantity', 'productionUnitRate', 'workerName', 
-    'workerCount', 'workType', 'paymentStatus', 'dueDate', 'createdAt'
+    'workerCount', 'workType', 'paymentStatus', 'dueDate',
+    'propertyId', 'propertyName', 'propertyType', 'tenantName', 'depositDeduction', 'targetType',
+    'createdAt'
   ];
 }
 
@@ -258,7 +264,7 @@ function getWorkerHeaders() {
 }
 
 function getCategoryHeaders() {
-  return ['id', 'name', 'type', 'icon', 'color', 'budgetLimit'];
+  return ['id', 'name', 'type', 'domain', 'icon', 'color', 'budgetLimit'];
 }
 
 function getAccountHeaders() {
@@ -279,6 +285,18 @@ function getLoanHeaders() {
 
 function getSavingHeaders() {
   return ['id', 'name', 'institution', 'schemeType', 'totalValue', 'totalInstallments', 'frequency', 'startDate', 'dueDate', 'dueDayOfMonth', 'status', 'notes', 'color', 'installments', 'bulkClaim', 'targetMaturityDate', 'expectedReturnRate'];
+}
+
+function getRentalPropertyHeaders() {
+  return [
+    'id', 'name', 'nameTa', 'type', 'agreementType', 'address', 'status', 
+    'tenantUserId', 'tenantName', 'tenantPhone', 'tenantAadhaar',
+    'monthlyRent', 'dueDayOfMonth', 'maintenanceAmount',
+    'depositAmount', 'depositReceivedDate', 'depositAccountId', 
+    'propertyTaxAmount', 'propertyTaxDueDate', 'taxAssessmentNumber',
+    'leaseStartDate', 'leaseEndDate', 'payments', 'settlements', 
+    'notes', 'createdAt'
+  ];
 }
 
 function getSettingsHeaders() {

@@ -20,6 +20,7 @@ import { AccountList } from './components/accounts/AccountList';
 import { AccountModal } from './components/accounts/AccountModal';
 import { TransferModal } from './components/accounts/TransferModal';
 import { GoalList } from './components/goals/GoalList';
+import { RentalHub } from './components/rentals/RentalHub';
 import { GoogleSheetSync } from './components/settings/GoogleSheetSync';
 import { GeneralSettings } from './components/settings/GeneralSettings';
 import { AIAssistant } from './components/ai/AIAssistant';
@@ -178,6 +179,7 @@ const MainApp: React.FC = () => {
                 onAddMilkEntry={handleOpenAddMilkEntry}
                 onOpenLoansSavings={() => setActiveTab('loans_savings')}
                 onOpenTransfer={() => setIsTransferModalOpen(true)}
+                onOpenRentals={() => setActiveTab('rentals')}
               />
 
               {/* KPI Cards */}
@@ -212,6 +214,7 @@ const MainApp: React.FC = () => {
           )}
 
           {activeTab === 'farm' && <FarmDashboard />}
+          {activeTab === 'rentals' && <RentalHub />}
 
           {activeTab === 'transactions' && (
             <TransactionList
@@ -230,7 +233,7 @@ const MainApp: React.FC = () => {
 
           {activeTab === 'sync'     && <GoogleSheetSync />}
           {activeTab === 'settings' && <GeneralSettings />}
-          {activeTab === 'ai'       && <AIAssistant />}
+          {activeTab === 'ai'       && <AIAssistant onNavigate={setActiveTab} />}
         </main>
       </div>
 

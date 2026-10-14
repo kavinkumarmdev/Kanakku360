@@ -13,6 +13,7 @@ import {
   Moon,
   Globe,
   BrainCircuit,
+  Building2,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
@@ -33,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen,
   setIsMobileOpen,
 }) => {
-  const { transactions, accounts, budgets, goals, loans, savings, pendingWageTransactions, settings, updateSettings, t } = useFinance();
+  const { transactions, accounts, budgets, goals, loans, savings, rentalProperties, pendingWageTransactions, settings, updateSettings, t } = useFinance();
   const { logout } = useAuth();
 
   const toggleLanguage = () => {
@@ -49,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems: { id: string; labelKey: TranslationKey; icon: any; badge: number | null; highlight?: boolean }[] = [
     { id: 'dashboard',    labelKey: 'navDashboard',    icon: LayoutDashboard, badge: null },
     { id: 'farm',         labelKey: 'navFarm',         icon: Sprout,          badge: pendingWageTransactions.length > 0 ? pendingWageTransactions.length : null },
+    { id: 'rentals',      labelKey: 'navRentals',      icon: Building2,       badge: rentalProperties.length > 0 ? rentalProperties.length : null },
     { id: 'transactions', labelKey: 'navTransactions', icon: Receipt,         badge: transactions.length },
     { id: 'loans_savings',labelKey: 'navLoansSavings', icon: Coins,           badge: (loans.length + savings.length) > 0 ? (loans.length + savings.length) : null },
     { id: 'budgets',      labelKey: 'navBudgets',      icon: PieChart,        badge: budgets.length },

@@ -1,0 +1,216 @@
+# ==============================================================================
+# KANAKKU360 - UNIFIED 8-TABLE RELATIONAL DATABASE SCHEMA ARCHITECTURE
+# ==============================================================================
+# This enterprise schema normalizes the entire Kanakku360 platform (Family Finance,
+# Multi-User Auth, Farm & Plots, Livestock, Rentals, Labor, Loans & Chits) into
+# exactly 8 cohesive, extensible, and high-performance tables.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1) UserMaster (System Users, Family Members, Employees/Workers & Tenants/Lessees)
+# ------------------------------------------------------------------------------
+# Primary master table for all persons across the system: family members, employees,
+# farm coolie workers, property managers, AND rental/lease tenants for home & shop.
+UserMaster
+id,username,password,role,userType,status,createdAt
+# Fields Explanation:
+# - id: Unique Identifier (e.g., usr_001, emp_001, wrk_perumal, tnt_murugan01)
+# - username: Login username or mobile phone (e.g., kavin, appa, 9876543210; blank/optional for offline tenants & field coolies)
+# - password: Secure PIN / Passcode (blank if tenant/worker doesn't have portal login access)
+# - role: Access permission tier (admin, manager, farmer, family_member, worker, tenant, viewer)
+# - userType: Classification (family_member, employee, coolie_worker, tenant, lessee, property_manager)
+# - status: Status state (active, on_leave, vacated, lease_expired, suspended, inactive)
+# - createdAt: Timestamp of registration (ISO 8601 string)
+
+
+# ------------------------------------------------------------------------------
+# 2) UserDetails (User, Employee & Tenant Profile Dynamic Attributes)
+# ------------------------------------------------------------------------------
+# Entity-Attribute-Value (EAV) table storing all dynamic attributes for family members,
+# employees/farm workers, AND home/shop tenants (contact, Aadhaar, lease term, emergency).
+UserDetails
+id,userId,categoryName,value,updatedAt
+# Fields Explanation:
+# - id: Unique record identifier (e.g., ud_001)
+# - userId: Foreign key referencing UserMaster.id (e.g., usr_001, emp_001, tnt_murugan01)
+# - categoryName: Dynamic attribute key:
+#     * Tenant & Lessee Attributes (for Home & Shop):
+#       - fullName / fullNameTa: Tenant full name in English & Tamil (e.g., "R. Murugan", "ஆர். முருகன்")
+#       - phone / alternatePhone: Tenant contact numbers (e.g., "9876543210", "9443312345")
+#       - aadhaarOrGovtId: Aadhaar card or voter ID number for legal record (e.g., "XXXX-XXXX-4589")
+#       - permanentAddress: Tenant native / permanent home address
+#       - occupation / businessName: Business or job (e.g., "Murugan Provision Store", "Software Engineer")
+#       - agreementStartDate: Lease / rental agreement inception date (YYYY-MM-DD)
+#       - agreementEndDate: Agreement expiration date (YYYY-MM-DD)
+#       - emergencyContact: Reference person name & contact number
+#     * Employee / Farm Labor Attributes:
+#       - employeeCode, designation, designationTa, department, employmentType, defaultDailyWage, monthlySalary, hireDate, bankAccount, upiId
+#     * Family Member Attributes:
+#       - fullName, fullNameTa, phone, relation, avatar, monthlySalary, themeColor, language, currency
+# - value: Stored attribute string value (e.g., "ஆர். முருகன்", "9876543210", "Murugan Provision Store")
+# - updatedAt: Timestamp of latest attribute modification (ISO 8601 string)
+
+
+# ------------------------------------------------------------------------------
+# 3) LoginHistory (Authentication & Audit Logs)
+# ------------------------------------------------------------------------------
+# Security audit trail logging every authentication, PIN entry, device, and session.
+LoginHistory
+id,userId,username,loginTime,ipAddress,userAgent,status
+# Fields Explanation:
+# - id: Unique log entry identifier (e.g., log_001)
+# - userId: Foreign key referencing UserMaster.id (e.g., usr_001)
+# - username: Username provided during login attempt
+# - loginTime: Timestamp when login occurred (ISO 8601 string)
+# - ipAddress: Client IP address / network identifier (e.g., 192.168.1.10)
+# - userAgent: Browser client & device platform metadata (e.g., Chrome/Android, Safari/iOS)
+# - status: Authentication result (success, failed_pin, account_locked, logout)
+
+
+# ------------------------------------------------------------------------------
+# 4) DropdownMaster (Universal Lookups, Taxonomies & Categories)
+# ------------------------------------------------------------------------------
+# Unified dictionary driving all dropdowns, transaction categories, crop types,
+# livestock classifications, rental property types, units, and payment modes.
+DropdownMaster
+id,primaryCategory,secondaryCategory,value,labelEn,labelTa,icon,color,sortOrder,isActive
+# Fields Explanation:
+# - id: Unique lookup identifier (e.g., dd_001, dd_cat_grocery)
+# - primaryCategory: Top-level domain (expense_category, income_category, payment_mode, property_type, crop_type, tree_type, livestock_type, work_type, scheme_type, relation_type)
+# - secondaryCategory: Sub-grouping / domain (farm, family, property, general, labor, milk_production)
+# - value: System identifier token (cat_groceries, cat_milk_sale, upi, shop, house, cow, coconut, daily_coolie)
+# - labelEn: English display label (e.g., "Groceries", "Milk Sales", "UPI / GPay", "Commercial Shop", "Coconut")
+# - labelTa: Tamil display label (e.g., "மளிகை பொருட்கள்", "பால் விற்பனை", "கூகுள் பே / UPI", "வணிக கடை", "தென்னை")
+# - icon: Lucide icon name or emoji symbol (e.g., ShoppingCart, Milk, Smartphone, Store, TreePalm, 🐄)
+# - color: Hex color code for UI badges & analytics (e.g., #10B981, #3B82F6, #F59E0B)
+# - sortOrder: Numeric integer for ordered display in UI dropdown lists (1, 2, 3...)
+# - isActive: Availability flag (true, false)
+
+
+# ------------------------------------------------------------------------------
+# 5) AccountsMaster (Financial Wallets, Bank Accounts & Cards)
+# ------------------------------------------------------------------------------
+# Master store of all liquid assets, bank checking/savings accounts, cash in hand,
+# UPI linked accounts, and credit card balances.
+AccountsMaster
+id,userId,name,type,accountNumber,balance,color,icon,isDefault,status,createdAt
+# Fields Explanation:
+# - id: Unique account identifier (e.g., acc_bank_sbi, acc_cash_hand, acc_gpay_hdfc)
+# - userId: Owner UserMaster.id (or "all" for shared family accounts)
+# - name: Display title (e.g., "SBI Agri Savings", "Cash in Hand", "HDFC UPI", "ICICI Credit Card")
+# - type: Account category (bank, cash, upi, credit_card, wallet)
+# - accountNumber: Masked account number or UPI VPA (e.g., "XXXX4589", "kavin@okaxis")
+# - balance: Real-time current ledger balance in INR (e.g., 45250.00)
+# - color: Brand theme color (e.g., #2563EB, #10B981, #7C3AED)
+# - icon: Visual icon identifier (Building2, Wallet, Smartphone, CreditCard)
+# - isDefault: Flag designating primary payment source (true, false)
+# - status: Operational state (active, closed, frozen)
+# - createdAt: Timestamp of account creation (ISO 8601 string)
+
+
+# ------------------------------------------------------------------------------
+# 6) TransactionsMaster (Universal Financial Ledger & Cash Flows)
+# ------------------------------------------------------------------------------
+# Central double-entry transaction book tracking all income, expenses, internal
+# transfers, farm labor coolie wages, milk/egg sales, coconut harvests, rental
+# collections, tenant advance deposits, and loan/chit repayments.
+TransactionsMaster
+id,userId,memberId,date,type,amount,categoryId,accountId,toAccountId,description,paymentMode,entityType,entityId,quantity,unitRate,paymentStatus,dueDate,tags,metadataJson,createdAt
+# Fields Explanation:
+# - id: Unique transaction identifier (e.g., tx_001, tx_farm_054)
+# - userId: User who initiated/recorded the transaction (usr_001)
+# - memberId: Family member or employee/worker attributed to this financial event referencing UserMaster.id (e.g., usr_001, emp_001, wrk_perumal)
+# - date: Transaction date (YYYY-MM-DD)
+# - type: Financial flow direction (expense, income, transfer)
+# - amount: Monetary transaction amount in INR (e.g., 2500.00)
+# - categoryId: Foreign key referencing DropdownMaster.value (e.g., cat_fertilizer, cat_farm_labor, cat_milk_sale, cat_rental_income)
+# - accountId: Source / deposit account referencing AccountsMaster.id (e.g., acc_bank_sbi)
+# - toAccountId: Destination account for transfers referencing AccountsMaster.id (e.g., acc_cash_hand)
+# - description: Narrative description or merchant notes (e.g., "Paid 5 coolie workers for paddy weeding", "Monthly salary for tractor driver")
+# - paymentMode: Payment method (cash, upi, bank, card, credit_card)
+# - entityType: Associated operational domain (farm_field, tree_harvest, livestock, rental_property, employee_worker, loan, saving_scheme, general)
+# - entityId: Foreign key referencing AssetsMaster.id, CommitmentsMaster.id, or UserMaster.id (e.g., ast_fld_01, ast_prop_02, cmt_loan_01, emp_001)
+# - quantity: Optional physical output quantity (e.g., 15.5 liters milk, 450 coconuts, 5 workers, 8 work days)
+# - unitRate: Price / wage rate per unit in INR (e.g., 36.00 per liter, 15.00 per nut, 450.00 daily coolie)
+# - paymentStatus: Payment settlement state (paid, pending)
+# - dueDate: Due date for pending wages, receivable milk payments, or rent dues (YYYY-MM-DD)
+# - tags: Comma-separated or JSON list of contextual tags (e.g., "coconut,harvest,labor,salary")
+# - metadataJson: Extensible JSON payload for domain attributes (e.g., {"depositDeduction": 1500, "targetType": "rental_advance_refund", "workerCount": 3, "overtimeHours": 2})
+# - createdAt: Timestamp of ledger entry creation (ISO 8601 string)
+
+
+# ------------------------------------------------------------------------------
+# 7) AssetsMaster (Physical Real Estate: Home & Shop Rentals/Leases, Farm Plots, Trees & Livestock)
+# ------------------------------------------------------------------------------
+# Unified registry managing all physical income-generating assets, including rental
+# homes & commercial shops (with advance, rent/lease, maintenance, property tax & tenant linking),
+# farm land partitions, boundary coconut trees, and livestock.
+AssetsMaster
+id,userId,tenantId,assetType,name,nameTa,subType,agreementType,status,currentValue,advanceDeposit,rentOrLeaseAmount,maintenanceAmount,dueDayOfMonth,propertyTaxAmount,propertyTaxDueDate,taxAssessmentNumber,specsJson,notes,createdAt,updatedAt
+# Fields Explanation:
+# - id: Unique asset identifier (e.g., ast_prop_shop01, ast_prop_house02, ast_fld_east02, ast_ls_cow01)
+# - userId: Owner / Landlord UserMaster.id (e.g., usr_001)
+# - tenantId: Linked Tenant UserMaster.id referencing UserMaster.id (e.g., tnt_murugan01; blank if vacant or owner-occupied)
+# - assetType: Primary asset category (rental_property, farm_field, livestock, tree_plantation)
+# - name: Primary English name (e.g., "North Main Road Commercial Shop #1", "Greenfield 2-BHK House", "East 2-Acre Coconut Grove")
+# - nameTa: Tamil name (e.g., "வடக்கு மெயின் ரோடு கடை #1", "கிரீன்ஃபீல்ட் 2-BHK வீடு", "கிழக்கு 2 ஏக்கர் தோட்டம்")
+# - subType: Specific property / asset classification:
+#     * Real Estate: shop, house, commercial, warehouse, land
+#     * Farm & Animals: cow, buffalo, sheep, goat, poultry, coconut, mango
+# - agreementType: Occupancy / contract model (rent, lease, commercial_lease, own_use)
+# - status: Operational state (occupied, vacant, under_maintenance, active, milking, dry, sold)
+# - currentValue: Estimated market valuation or construction cost in INR (e.g., 2500000.00, 65000.00)
+# - advanceDeposit: Security deposit / advance amount received in INR (e.g., 50000.00 for shop, 100000.00 for house)
+# - rentOrLeaseAmount: Monthly rental rate OR full lease contract value in INR (e.g., 8500.00 / month, or 500000.00 3-year lease)
+# - maintenanceAmount: Monthly building / society maintenance fee in INR (e.g., 500.00, 1000.00)
+# - dueDayOfMonth: Monthly rent payment cut-off date (e.g., 1, 5, 10)
+# - propertyTaxAmount: Annual municipal corporation / panchayat property tax in INR (e.g., 3200.00)
+# - propertyTaxDueDate: Annual property tax payment deadline (YYYY-MM-DD, e.g., 2026-09-30)
+# - taxAssessmentNumber: Property tax assessment ID or EB consumer number (e.g., "TAX-MDU-2026-88", "EB-04-102-45")
+# - specsJson: Domain-specific parameters stored in high-performance structured JSON:
+#     * For Rental Properties (Home & Shop):
+#       {"depositAccountId": "acc_bank_sbi", "leaseStartDate": "2026-01-01", "leaseEndDate": "2026-12-31", "waterTaxAmount": 450, "cleaningDeductionRules": "White-wash and repair costs deducted from advance"}
+#     * For Farm Fields:
+#       {"areaAcre": 2.0, "sizeUnit": "acre", "hasBoundaryCoconut": true, "boundaryTreeCount": 85, "color": "#10B981", "cropType": "Paddy (Ponni)", "secondaryCrops": ["Sesame", "Blackgram"]}
+#     * For Livestock:
+#       {"tagNumber": "TN-33-COW-01", "dailyMilkLiters": 14.5, "milkRatePerLiter": 36.0, "dailyEggCount": 0, "count": 1}
+#     * For Tree Plantations:
+#       {"fieldId": "ast_fld_east02", "treeType": "coconut", "treeCount": 120, "harvestCycleMonths": 3, "avgYieldPerHarvest": 1350}
+# - notes: Operational remarks, legal terms, boundary notes, or lease terms
+# - createdAt: Timestamp of asset registration (ISO 8601 string)
+# - updatedAt: Timestamp of last specification update (ISO 8601 string)
+
+
+# ------------------------------------------------------------------------------
+# 8) CommitmentsMaster (Loans, Tamil Chit Funds, Savings Schemes & Budgets)
+# ------------------------------------------------------------------------------
+# Unified registry managing all contractual liabilities, external borrowings,
+# Tamil chit funds (ஏலச் சீட்டு), recurring deposits, savings goals, and monthly budgets.
+CommitmentsMaster
+id,userId,commitmentType,name,institution,principalOrTargetAmount,currentAmount,interestRate,emiOrInstallment,startDate,dueDate,tenureMonths,status,detailsJson,notes,createdAt,updatedAt
+# Fields Explanation:
+# - id: Unique commitment identifier (e.g., cmt_loan_tractor, cmt_chit_1lakh, cmt_goal_gold)
+# - userId: Owner / Borrower UserMaster.id (e.g., usr_001)
+# - commitmentType: Financial contract type (loan_borrowed, loan_lent, chit_fund, rd, fd, gold_chit, savings_goal, budget_limit)
+# - name: Agreement or fund title (e.g., "SBI Tractor Loan", "Murugan 1 Lakh Monthly Chit (சீட்டு)", "Tractor Down Payment Goal")
+# - institution: Organization, bank, or organizer name (e.g., "State Bank of India", "Sri Ram Chits", "K. Arumugam")
+# - principalOrTargetAmount: Total contract value, borrowed principal, or target goal (e.g., 250000.00, 100000.00, 50000.00)
+# - currentAmount: Current balance remaining to pay, amount saved, or invested to date (e.g., 185000.00, 45000.00)
+# - interestRate: Annual interest percentage rate if applicable (e.g., 8.5)
+# - emiOrInstallment: Monthly EMI payment or chit installment contribution in INR (e.g., 5200.00, 5000.00)
+# - startDate: Inception date of loan, scheme, or savings goal (YYYY-MM-DD)
+# - dueDate: Next installment due date, maturity deadline, or monthly cut-off (YYYY-MM-DD)
+# - tenureMonths: Total duration of scheme or loan in months (e.g., 36, 20, 12)
+# - status: Agreement status (active, closed, claimed, completed)
+# - detailsJson: Domain-specific parameters stored in high-performance structured JSON:
+#     * For Chit Funds (சீட்டு):
+#       {"totalInstallments": 20, "paidInstallments": 9, "frequency": "monthly", "dueDayOfMonth": 10, "auctionClaimed": false, "bulkClaimAmount": 0, "color": "#14B8A6"}
+#     * For Loans:
+#       {"lenderBorrower": "SBI Commercial Branch", "interestType": "simple", "totalInterestPaid": 14200.00}
+#     * For Savings Goals:
+#       {"targetDate": "2027-04-14", "icon": "Target", "color": "#EC4899", "category": "Equipment"}
+#     * For Category Budgets:
+#       {"categoryId": "cat_farm_labor", "monthlyLimit": 25000.00, "month": 10, "year": 2026}
+# - notes: Important terms, auction notes, or milestone comments
+# - createdAt: Timestamp of commitment registration (ISO 8601 string)
+# - updatedAt: Timestamp of last status modification (ISO 8601 string)

@@ -10,6 +10,7 @@ export type CategoryDomain =
   | 'medical'
   | 'utility'
   | 'household'
+  | 'property'
   | 'income'
   | 'other';
 
@@ -120,6 +121,13 @@ export interface Transaction {
   productionQuantity?: number; // Liters of milk, count of eggs, or kg of meat
   productionUnitRate?: number; // Rate per L or per egg
 
+  // Rental Property specific fields
+  propertyId?: string; // Linked shop or house
+  propertyName?: string;
+  propertyType?: string; // 'shop' | 'house' etc.
+  tenantName?: string;
+  depositDeduction?: number;
+
   targetType?:
   | 'farm_labor'
   | 'farm_fertilizer'
@@ -138,6 +146,10 @@ export interface Transaction {
   | 'crop_sale'
   | 'milk_sale'
   | 'egg_sale'
+  | 'rental_income'
+  | 'rental_advance'
+  | 'rental_advance_refund'
+  | 'property_maintenance'
   | 'general';
 }
 
@@ -497,6 +509,82 @@ export interface SavingScheme {
   // Type 1 Fixed / Target properties
   targetMaturityDate?: string;
   expectedReturnRate?: number;
+}
+
+// ----------------------------------------------------
+// RENTAL PROPERTIES & TENANTS (வாடகை கடைகள் & வீடுகள்)
+// ----------------------------------------------------
+export type PropertyType = 'shop' | 'house' | 'commercial' | 'room' | 'land' | 'other';
+export type RentalStatus = 'occupied' | 'vacant';
+
+export interface RentalSettlement {
+  id: string;
+  tenantName: string;
+  vacateDate: string; // YYYY-MM-DD
+  originalDeposit: number; // e.g. ₹50,000 initial advance
+  deductionAmount: number; // e.g. ₹5,000 total deducted
+  deductionReason?: string; // e.g. "Cleaning & Painting charges / சுத்தம் & பெயிண்டிங்"
+  cleaningDeduction?: number; // Cleaning deduction amount
+  paintingDeduction?: number; // Painting deduction amount
+  damageDeduction?: number; // Repair & damage charges
+  unpaidBillsDeduction?: number; // Electricity / rent due
+  refundedAmount: number; // Net amount returned to tenant e.g. ₹45,000
+  refundDate: string; // YYYY-MM-DD
+  paymentMode: PaymentMode;
+  accountId?: string;
+  notes?: string;
+  transactionId?: string;
+}
+
+export interface RentalPayment {
+  id: string;
+  date: string; // YYYY-MM-DD
+  amount: number; // Monthly rent collected e.g. ₹8,000
+  periodMonth?: string; // e.g. "October 2026"
+  tenantName?: string;
+  paymentMode: PaymentMode;
+  accountId?: string;
+  notes?: string;
+  transactionId?: string;
+}
+
+export interface RentalProperty {
+  id: string;
+  name: string; // e.g. "Main Bazaar Shop #1", "Upstairs 2BHK House"
+  nameTa?: string;
+  type: PropertyType; // 'shop' | 'house' | 'commercial' | 'warehouse' | 'land'
+  agreementType?: 'rent' | 'lease' | 'commercial_lease' | 'own_use';
+  address?: string;
+  status: RentalStatus; // 'occupied' | 'vacant'
+
+  // Current Tenant Info (if occupied)
+  tenantUserId?: string; // Reference to UserMaster / Tenant ID
+  tenantName?: string;
+  tenantPhone?: string;
+  tenantAadhaar?: string;
+  monthlyRent: number; // Expected monthly rent or lease installment amount
+  dueDayOfMonth?: number; // Day of month rent is due (e.g. 1st or 5th)
+  maintenanceAmount?: number; // Monthly society / maintenance charge
+
+  // Initial Security Advance / Deposit
+  depositAmount: number; // Initial security advance collected e.g. ₹50,000
+  depositReceivedDate?: string;
+  depositAccountId?: string; // Account where advance was kept
+
+  // Property Tax & Municipal Assessment
+  propertyTaxAmount?: number; // Annual property tax amount
+  propertyTaxDueDate?: string; // Annual due date
+  taxAssessmentNumber?: string; // EB consumer number or Property Tax Assessment ID
+
+  leaseStartDate?: string;
+  leaseEndDate?: string;
+
+  // Payment history & vacate settlements
+  payments: RentalPayment[];
+  settlements: RentalSettlement[];
+
+  notes?: string;
+  createdAt?: string;
 }
 
 export type Language = 'en' | 'ta';

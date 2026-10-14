@@ -43,6 +43,12 @@ export const CATEGORY_TRANSLATIONS: { [key: string]: { en: string; ta: string } 
   cat_freelance: { en: 'Consulting & Freelance', ta: 'தொழில் & ஆலோசனை' },
   cat_invest_return: { en: 'Dividends & Returns', ta: 'முதலீட்டு வருமானம்' },
   cat_cashback: { en: 'Cashback & Rewards', ta: 'சன்மானங்கள்' },
+
+  // Rentals & Property
+  cat_rental_income: { en: 'House & Shop Rent Income', ta: 'வீடு & கடை வாடகை வரவு' },
+  cat_rental_advance: { en: 'Rental Advance / Deposit Received', ta: 'வாடகை முன்பணம் / அட்வான்ஸ் வரவு' },
+  cat_rental_advance_refund: { en: 'Rental Deposit Refund / Return', ta: 'வாடகை முன்பணம் திருப்பி செலுத்துதல்' },
+  cat_property_maintenance: { en: 'Property Maintenance & Cleaning', ta: 'சுத்தம் & பெயிண்டிங் பராமரிப்பு செலவு' },
 };
 
 export const PAYMENT_MODE_TRANSLATIONS: { [key: string]: { en: string; ta: string } } = {
@@ -74,6 +80,7 @@ export const translations = {
     // Nav Items
     navDashboard: 'Dashboard',
     navFarm: 'Farm & Labor Wages',
+    navRentals: 'Rentals & Properties',
     navTransactions: 'Ledger & Expenses',
     navLoansSavings: 'Loans & Savings / Chits',
     navBudgets: 'Budgets & Limits',
@@ -562,6 +569,7 @@ export const translations = {
     // Nav Items
     navDashboard: 'முகப்பு',
     navFarm: 'பண்ணை & கூலி கணக்கு',
+    navRentals: 'வாடகை & சொத்துக்கள்',
     navTransactions: 'கணக்கு & செலவுகள்',
     navLoansSavings: 'கடன் & சேமிப்பு / சீட்டு',
     navBudgets: 'பட்ஜெட் & வரம்புகள்',

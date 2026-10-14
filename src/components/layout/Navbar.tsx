@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
-import { CloudOff, RefreshCw, Plus, Settings as SettingsIcon, Menu, Globe, Lock, LogOut, Sun, Moon, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { Plus, Settings as SettingsIcon, Menu, Globe, Lock, LogOut, Sun, Moon } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -17,7 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenQuickAdd,
   onOpenMobileMenu,
 }) => {
-  const { syncState, syncWithGoogleSheet, settings, updateSettings, totalNetWorth, t } = useFinance();
+  const { settings, updateSettings, totalNetWorth, t } = useFinance();
   const { user, availableUsers, loginAsUser, logout, lockWithPin } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -92,71 +92,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Globe size={14} className="text-slate-400 shrink-0" />
             <span className="whitespace-nowrap">{settings.language === 'ta' ? 'தமிழ்' : 'English'}</span>
-          </button>
-
-          {/* Cloud Sync Status Pill */}
-          <button
-            onClick={() => {
-              if (settings.sheetUrl) {
-                syncWithGoogleSheet('smart');
-              } else {
-                setActiveTab('settings');
-              }
-            }}
-            disabled={syncState.status === 'syncing'}
-            title={
-              !settings.sheetUrl
-                ? (settings.language === 'ta' ? 'கூகிள் தாள் இணைக்கப்படவில்லை. அமைக்க கிளிக் செய்க.' : 'Google Sheet not connected. Click to connect now.')
-                : syncState.status === 'syncing'
-                ? (settings.language === 'ta' ? 'கூகிள் தாளுடன் ஒத்திசைகிறது...' : 'Syncing data to Google Sheet...')
-                : syncState.pendingChangesCount > 0
-                ? (settings.language === 'ta' ? `${syncState.pendingChangesCount} புதிய மாற்றங்கள் உள்ளன. கூகிள் தாளில் சேமிக்க கிளிக் செய்க!` : `${syncState.pendingChangesCount} changes waiting to sync. Click to upload to Google Sheet now!`)
-                : syncState.status === 'error'
-                ? (settings.language === 'ta' ? 'ஒத்திசைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்க கிளிக் செய்க.' : `Sync error: ${syncState.errorMessage || 'Failed'}. Click to retry.`)
-                : (settings.language === 'ta' ? `கூகிள் தாள் ஒத்திசைக்கப்பட்டது (${syncState.lastSynced || ''}). மீண்டும் ஒத்திசைக்க கிளிக் செய்க.` : `Google Sheet Synced (${syncState.lastSynced || 'Up to date'}). Click to sync again.`)
-            }
-            className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-medium border transition-all shrink-0 cursor-pointer ${
-              syncState.status === 'syncing'
-                ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300'
-                : !settings.sheetUrl
-                ? 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
-                : syncState.pendingChangesCount > 0
-                ? 'bg-amber-950/40 border-amber-500/50 text-amber-300 hover:bg-amber-950/60'
-                : syncState.status === 'error'
-                ? 'bg-rose-950/50 border-rose-500/40 text-rose-300'
-                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
-            }`}
-          >
-            {syncState.status === 'syncing' ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400 shrink-0" />
-            ) : !settings.sheetUrl ? (
-              <CloudOff className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            ) : syncState.pendingChangesCount > 0 ? (
-              <UploadCloud className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            ) : syncState.status === 'error' ? (
-              <CloudOff className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-            ) : (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            )}
-
-            <span className="hidden md:inline whitespace-nowrap">
-              {syncState.status === 'syncing'
-                ? t('syncing')
-                : !settings.sheetUrl
-                ? t('localOffline')
-                : syncState.pendingChangesCount > 0
-                ? `${t('clickToSync')} (${syncState.pendingChangesCount})`
-                : syncState.status === 'error'
-                ? (settings.language === 'ta' ? 'மீண்டும் முயற்சிக்க' : 'Retry Sync')
-                : t('sheetSynced')}
-            </span>
-
-            {/* Mobile notification badge if pending changes exist */}
-            {settings.sheetUrl && syncState.pendingChangesCount > 0 && (
-              <span className="md:hidden flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold">
-                {syncState.pendingChangesCount > 9 ? '9+' : syncState.pendingChangesCount}
-              </span>
-            )}
           </button>
 
           {/* Quick Add Button */}

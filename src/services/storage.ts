@@ -12,6 +12,7 @@ import type {
   TreeHarvestEntry,
   Loan,
   SavingScheme,
+  RentalProperty,
 } from '../types/finance';
 import { DEFAULT_FAMILY_MEMBERS } from '../types/finance';
 import type { User } from '../types/auth';
@@ -30,6 +31,7 @@ const STORAGE_KEYS = {
   TREE_HARVESTS: 'kanakku360_tree_harvests',
   LOANS: 'kanakku360_loans',
   SAVINGS: 'kanakku360_savings',
+  RENTAL_PROPERTIES: 'kanakku360_rental_properties',
   AUTH_CURRENT_USER: 'kanakku360_current_user',
   AUTH_USERS: 'kanakku360_users',
 };
@@ -89,7 +91,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   currency: 'INR',
   currencySymbol: '₹',
   sheetUrl: 'https://script.google.com/macros/s/AKfycbxFti-YWVCKI0HIqbwn6TaWAoNfF_f_aAa5A2xB1D7cxM4AwMFjMSIFTbCja7GB29QC/exec',
-  autoSync: false,
+  autoSync: true,
   theme: 'dark',
   userName: 'Kavin',
   language: 'ta',
@@ -144,6 +146,12 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 'cat_vegetable_sale', name: 'Vegetables & Onion Sales (காய்கறி & வெங்காயம் விற்பனை)', type: 'income', domain: 'income', icon: 'Apple', color: '#F59E0B' },
   { id: 'cat_farm_subsidy', name: 'Govt Agri Subsidies (விவசாய மானியம் & PM-Kisan)', type: 'income', domain: 'income', icon: 'Landmark', color: '#8B5CF6' },
   { id: 'cat_salary', name: 'Monthly Company Salary (கம்பெனி மாதச் சம்பளம் - கவின் & தம்பி)', type: 'income', domain: 'income', icon: 'Briefcase', color: '#6366F1' },
+
+  // 7. Shop & House Rental Income, Advances & Property Maintenance
+  { id: 'cat_rental_income', name: 'House & Shop Rent Income (வீடு & கடை வாடகை வரவு)', type: 'income', domain: 'property', icon: 'Home', color: '#10B981' },
+  { id: 'cat_rental_advance', name: 'Rental Advance / Deposit Received (வாடகை முன்பணம் / அட்வான்ஸ் வரவு)', type: 'income', domain: 'property', icon: 'Key', color: '#06B6D4' },
+  { id: 'cat_rental_advance_refund', name: 'Rental Deposit Refund / Return (முன்பணம் திருப்பி கொடுத்தல்)', type: 'expense', domain: 'property', icon: 'ArrowUpRight', color: '#F43F5E' },
+  { id: 'cat_property_maintenance', name: 'Property Maintenance & Cleaning (சுத்தம் & பராமரிப்பு செலவு)', type: 'expense', domain: 'property', icon: 'Sparkles', color: '#F59E0B', budgetLimit: 10000 },
 ];
 
 export const INITIAL_ACCOUNTS: Account[] = [
@@ -396,6 +404,22 @@ export const StorageService = {
     localStorage.setItem(STORAGE_KEYS.SAVINGS, JSON.stringify(savings));
   },
 
+  getRentalProperties: (): RentalProperty[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.RENTAL_PROPERTIES);
+    if (!data) {
+      return [];
+    }
+    try {
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  },
+
+  saveRentalProperties: (properties: RentalProperty[]) => {
+    localStorage.setItem(STORAGE_KEYS.RENTAL_PROPERTIES, JSON.stringify(properties));
+  },
+
   getSettings: (): AppSettings => {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!data) {
@@ -410,10 +434,8 @@ export const StorageService = {
       ) {
         parsed.sheetUrl = INITIAL_SETTINGS.sheetUrl;
       }
-      if (typeof parsed.autoSync !== 'boolean') {
-        parsed.autoSync = false;
-      }
-      return { ...INITIAL_SETTINGS, ...parsed };
+      parsed.autoSync = true;
+      return { ...INITIAL_SETTINGS, ...parsed, autoSync: true };
     } catch {
       return INITIAL_SETTINGS;
     }

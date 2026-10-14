@@ -1,22 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../utils/formatters';
-import { Bot, Send, User, Sparkles, RefreshCw, Plus, FileSpreadsheet, X, Check, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
-import type { Category, Account } from '../../types/finance';
+import {
+  Bot, Send, User, Sparkles, RefreshCw, Plus, FileSpreadsheet, X, Check,
+  Building2
+} from 'lucide-react';
+import type { Category, Account, RentalProperty } from '../../types/finance';
 
-interface Message {
+export interface MessageAction {
+  label: string;
+  action: '__CONFIRM_QUICK_ADD__' | '__OPEN_QUICK_ADD__' | '__NAV_TAB__' | '__CONFIRM_SETTLEMENT__' | '__SEND_PROMPT__';
+  payload?: any;
+}
+
+export interface SummaryCard {
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+}
+
+export interface Message {
   id: string;
   role: 'user' | 'ai';
   text: string;
   timestamp: Date;
   cards?: SummaryCard[];
+  actions?: MessageAction[];
 }
 
-interface SummaryCard {
-  label: string;
-  value: string;
-  icon: string;
-  color: string;
+export interface AIAssistantProps {
+  onNavigate?: (tab: string) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -26,11 +40,14 @@ function buildAIContext(ctx: ReturnType<typeof useFinance>) {
   const {
     transactions, accounts, loans, savings, goals, budgets,
     fields, livestock, workers, familyMembers,
+    rentalProperties,
     totalNetWorth, totalIncomeThisMonth, totalExpenseThisMonth,
     netSavingsThisMonth, totalLoanLiability, totalSavingsInvested,
     totalChitFundsValue, totalPendingWages,
     totalAnimalCount, totalDailyMilkLiters, totalFarmExpense,
     totalCropIncome, totalTreeHarvestIncome, totalMilkSalesIncome,
+    totalMonthlyRentExpected, totalRentCollectedThisMonth,
+    totalDepositsHeld, totalRentalIncomeAllTime,
     settings,
   } = ctx;
 
@@ -63,9 +80,12 @@ function buildAIContext(ctx: ReturnType<typeof useFinance>) {
     totalChitFundsValue, totalPendingWages,
     totalAnimalCount, totalDailyMilkLiters, totalFarmExpense,
     totalCropIncome, totalTreeHarvestIncome, totalMilkSalesIncome,
+    totalMonthlyRentExpected, totalRentCollectedThisMonth,
+    totalDepositsHeld, totalRentalIncomeAllTime,
     totalBalance, activeLoans, activeSavings,
     accounts, loans, savings, goals, budgets,
     fields, livestock, workers, familyMembers,
+    rentalProperties: rentalProperties || [],
     transactions, monthTx, topExpCat,
     userName: settings.userName || 'Kavin',
   };
@@ -77,7 +97,7 @@ function buildAIContext(ctx: ReturnType<typeof useFinance>) {
 function generateAIResponse(
   input: string,
   ctx: ReturnType<typeof buildAIContext>
-): { text: string; cards?: SummaryCard[] } {
+): { text: string; cards?: SummaryCard[]; actions?: MessageAction[] } {
   const q = input.toLowerCase().trim();
   const {
     fmt, totalNetWorth, totalIncomeThisMonth, totalExpenseThisMonth,
@@ -85,6 +105,9 @@ function generateAIResponse(
     totalChitFundsValue, totalPendingWages, totalAnimalCount,
     totalDailyMilkLiters, totalFarmExpense, totalCropIncome,
     totalTreeHarvestIncome, totalMilkSalesIncome, totalBalance,
+    totalMonthlyRentExpected, totalRentCollectedThisMonth,
+    totalDepositsHeld, totalRentalIncomeAllTime,
+    rentalProperties,
     activeLoans, activeSavings, accounts,
     goals, budgets, fields, livestock, workers, familyMembers,
     transactions, monthTx, topExpCat, userName,
@@ -93,7 +116,83 @@ function generateAIResponse(
   // GREETING
   if (/^(hi|hello|hey|வணக்கம்|hai|helo|start|help)/.test(q)) {
     return {
-      text: `👋 வணக்கம் ${userName}! I'm your **Kanakku360 AI Assistant**.\n\nI can help you with:\n• 💰 Account balances & net worth\n• 📊 Income, expenses & savings\n• 🏦 Loans & EMI details\n• 🪙 Chit fund & savings schemes\n• 🌾 Farm, crop & livestock data\n• 📈 Budget & goal tracking\n\nAsk me anything! Try: *"What is my net worth?"* or *"Show my loans"*`,
+      text: `👋 வணக்கம் ${userName}! I'm your **Kanakku360 AI Assistant**.\n\nI can help you with:\n• 🏠 **Shop & House Rentals** (Rent income, advance deposits & cleaning deductions)\n• 💰 **Account balances & net worth**\n• 📊 **Income, expenses & live Google Sheet sync**\n• 🏦 **Loans & EMI details**\n• 🪙 **Chit funds & savings schemes**\n• 🌾 **Farm, crop & livestock data**\n• 📈 **Budget & goal tracking**\n\nAsk me anything! Try: *"How to manage shop rent?"* or *"What is my net worth?"*`,
+      actions: [
+        { label: '🏠 Rentals Hub', action: '__NAV_TAB__', payload: { tab: 'rentals' } },
+        { label: '💎 Net Worth', action: '__SEND_PROMPT__', payload: { text: 'What is my net worth?' } },
+        { label: '➕ Add Expense', action: '__OPEN_QUICK_ADD__', payload: { type: 'expense' } },
+      ],
+    };
+  }
+
+  // GUIDE / HOW-TO MANAGE RENTALS & ADVANCE DEDUCTIONS
+  if (/how.*(add|update|manage|work|use|rent|advance|clean|vacate)|எப்படி.*(சேர்க்க|வாடகை|முன்பணம்|சுத்தம்)/.test(q)) {
+    return {
+      text: `🏠 **How to Manage Shop & House Rentals in Kanakku360**\n\n` +
+        `You have 2 convenient ways to manage properties, rental income, and security advance refunds:\n\n` +
+        `### 1️⃣ In the Rentals & Properties Tab (Full Dashboard)\n` +
+        `• **Add Property:** Click **+ Add Property** ➔ Select **Shop (கடை)** or **House (வீடு)**, enter monthly rent & initial advance deposit.\n` +
+        `• **Collect Monthly Rent:** Click **Collect Rent** on any occupied property to record income in 1 click.\n` +
+        `• **Vacate & Refund Advance (with Cleaning Deductions):**\n` +
+        `  When a tenant leaves, click **Settle & Vacate**. You can return full or partial advance, and enter deductions for:\n` +
+        `  - 🧹 Cleaning (துப்புரவு / சுத்தம்)\n` +
+        `  - 🎨 Painting (வண்ணம் பூசுதல்)\n` +
+        `  - 🔧 Damages / Repairs (பழுது)\n` +
+        `  The net amount is refunded to the tenant, and deduction is tracked as property maintenance!\n\n` +
+        `### 2️⃣ Fast AI Natural Language Chat\n` +
+        `You can type directly into this chat anytime:\n` +
+        `• *"Add shop rent 8000"*\n` +
+        `• *"Received house advance 50000"*\n` +
+        `• *"Vacate shop advance 50000 reduce 5000 cleaning"*\n` +
+        `• *"Add amount 1000"* (I will ask for clarification instead of blindly tagging!)\n\n` +
+        `Click below to jump directly to your Rentals Hub:`,
+      cards: [
+        { label: 'Expected Rent',  value: fmt(totalMonthlyRentExpected),    icon: '💵', color: 'emerald' },
+        { label: 'Advance Held',   value: fmt(totalDepositsHeld),           icon: '🔑', color: 'indigo' },
+      ],
+      actions: [
+        { label: '🏠 Go to Rentals Hub', action: '__NAV_TAB__', payload: { tab: 'rentals' } },
+        { label: '➕ Add Shop / House',  action: '__NAV_TAB__', payload: { tab: 'rentals', openAdd: true } },
+      ],
+    };
+  }
+
+  // RENTALS / PROPERTIES / SHOPS / HOUSES / ADVANCE
+  if (/rent|வாடகை|shop|வீடு|house|advance|முன்பணம்|tenant|property|சொத்து|கடை/.test(q)) {
+    const totalProps = rentalProperties.length;
+    const occupied = rentalProperties.filter(p => p.status === 'occupied').length;
+    const vacant = rentalProperties.filter(p => p.status === 'vacant').length;
+    const pendingRent = Math.max(0, totalMonthlyRentExpected - totalRentCollectedThisMonth);
+
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
+    const propList = rentalProperties.map(p => {
+      const typeLabel = p.type === 'shop' ? '🏪 Shop' : '🏠 House';
+      const statusLabel = p.status === 'occupied' ? `Occupied by ${p.tenantName || 'Tenant'}` : 'Vacant';
+      const isPaid = (p.payments || []).some(pm => pm.date.startsWith(currentMonthStr));
+      const collectedBadge = isPaid ? '✅ Paid this month' : '⏳ Pending this month';
+      return `• **${p.name}** (${typeLabel})\n  Rent: **${fmt(p.monthlyRent)}/mo** | Advance: **${fmt(p.depositAmount)}** | ${statusLabel}\n  Status: ${collectedBadge}`;
+    }).join('\n\n');
+
+    return {
+      text: `🏠 **Rentals & Properties Overview**\n\n` +
+        `• Total Properties: **${totalProps}** (${occupied} Occupied, ${vacant} Vacant)\n` +
+        `• 💵 Monthly Rent Expected: **${fmt(totalMonthlyRentExpected)}**\n` +
+        `• 💚 Rent Collected This Month: **${fmt(totalRentCollectedThisMonth)}**\n` +
+        `• ⏳ Rent Pending: **${fmt(pendingRent)}**\n` +
+        `• 🔑 Total Security Advance Held: **${fmt(totalDepositsHeld)}**\n` +
+        `• 💰 Lifetime Rental Income: **${fmt(totalRentalIncomeAllTime)}**\n\n` +
+        (propList ? `**Your Properties:**\n\n${propList}\n\n` : `ℹ️ No rental properties added yet. Click below to add your Shop or House!\n\n`) +
+        `💡 *You can record monthly rent, advance deposits, and return deposits with cleaning deductions!*`,
+      cards: [
+        { label: 'Expected Rent',  value: fmt(totalMonthlyRentExpected),      icon: '💵', color: 'emerald' },
+        { label: 'Rent Collected', value: fmt(totalRentCollectedThisMonth),   icon: '💚', color: 'teal' },
+        { label: 'Advance Held',   value: fmt(totalDepositsHeld),             icon: '🔑', color: 'indigo' },
+        { label: 'Properties',     value: `${totalProps} (${occupied} rented)`, icon: '🏢', color: 'amber' },
+      ],
+      actions: [
+        { label: '🏠 Open Rentals Hub', action: '__NAV_TAB__', payload: { tab: 'rentals' } },
+        { label: '➕ Add Shop / House', action: '__NAV_TAB__', payload: { tab: 'rentals', openAdd: true } },
+      ],
     };
   }
 
@@ -113,7 +212,7 @@ function generateAIResponse(
   // INCOME
   if (/income|வருமானம்|earning|incom/.test(q)) {
     return {
-      text: `💚 **This Month's Income**\n\nTotal: **${fmt(totalIncomeThisMonth)}**\n\n• 🌾 Crop Income: ${fmt(totalCropIncome)}\n• 🥛 Milk Sales: ${fmt(totalMilkSalesIncome)}\n• 🌳 Tree Harvest: ${fmt(totalTreeHarvestIncome)}\n• 💼 Other: ${fmt(Math.max(0, totalIncomeThisMonth - totalCropIncome - totalMilkSalesIncome - totalTreeHarvestIncome))}\n\n${totalIncomeThisMonth > totalExpenseThisMonth ? '✅ Earning more than spending this month!' : '⚠️ Expenses exceed income — review your spending.'}`,
+      text: `💚 **This Month's Income**\n\nTotal: **${fmt(totalIncomeThisMonth)}**\n\n• 🏠 Rental Income: ${fmt(totalRentCollectedThisMonth)}\n• 🌾 Crop Income: ${fmt(totalCropIncome)}\n• 🥛 Milk Sales: ${fmt(totalMilkSalesIncome)}\n• 🌳 Tree Harvest: ${fmt(totalTreeHarvestIncome)}\n• 💼 Other: ${fmt(Math.max(0, totalIncomeThisMonth - totalCropIncome - totalMilkSalesIncome - totalTreeHarvestIncome - totalRentCollectedThisMonth))}\n\n${totalIncomeThisMonth > totalExpenseThisMonth ? '✅ Earning more than spending this month!' : '⚠️ Expenses exceed income — review your spending.'}`,
       cards: [
         { label: 'Total Income',  value: fmt(totalIncomeThisMonth), icon: '📈', color: 'emerald' },
         { label: 'Net Savings',   value: fmt(netSavingsThisMonth),  icon: '💰', color: netSavingsThisMonth >= 0 ? 'emerald' : 'rose' },
@@ -243,12 +342,12 @@ function generateAIResponse(
   // FULL SUMMARY / REPORT
   if (/summary|report|overview|full|all|complete|show me everything/.test(q)) {
     return {
-      text: `📋 **Full Financial Summary — ${new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}**\n\n**💰 This Month**\n• Income: ${fmt(totalIncomeThisMonth)}\n• Expenses: ${fmt(totalExpenseThisMonth)}\n• Net Savings: ${fmt(netSavingsThisMonth)}\n\n**🏦 Assets**\n• Cash & Bank: ${fmt(totalBalance)}\n• Savings / Chits: ${fmt(totalSavingsInvested + totalChitFundsValue)}\n\n**⚠️ Liabilities**\n• Total Loans: ${fmt(totalLoanLiability)}\n• Pending Wages: ${fmt(totalPendingWages)}\n\n**🌾 Farm**\n• Crop Income: ${fmt(totalCropIncome)}\n• Farm Expenses: ${fmt(totalFarmExpense)}\n• Animals: ${totalAnimalCount} | Milk: ${totalDailyMilkLiters.toFixed(1)} L/day\n\n**💎 Net Worth: ${fmt(totalNetWorth)}**`,
+      text: `📋 **Full Financial Summary — ${new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}**\n\n**💰 This Month**\n• Income: ${fmt(totalIncomeThisMonth)}\n• Expenses: ${fmt(totalExpenseThisMonth)}\n• Net Savings: ${fmt(netSavingsThisMonth)}\n\n**🏠 Rentals**\n• Expected Rent: ${fmt(totalMonthlyRentExpected)}\n• Collected: ${fmt(totalRentCollectedThisMonth)}\n• Advance Held: ${fmt(totalDepositsHeld)}\n\n**🏦 Assets**\n• Cash & Bank: ${fmt(totalBalance)}\n• Savings / Chits: ${fmt(totalSavingsInvested + totalChitFundsValue)}\n\n**⚠️ Liabilities**\n• Total Loans: ${fmt(totalLoanLiability)}\n• Pending Wages: ${fmt(totalPendingWages)}\n\n**🌾 Farm**\n• Crop Income: ${fmt(totalCropIncome)}\n• Farm Expenses: ${fmt(totalFarmExpense)}\n• Animals: ${totalAnimalCount} | Milk: ${totalDailyMilkLiters.toFixed(1)} L/day\n\n**💎 Net Worth: ${fmt(totalNetWorth)}**`,
       cards: [
         { label: 'Net Worth',    value: fmt(totalNetWorth),          icon: '💎', color: 'emerald' },
         { label: 'Monthly In',  value: fmt(totalIncomeThisMonth),    icon: '📈', color: 'teal' },
         { label: 'Monthly Out', value: fmt(totalExpenseThisMonth),   icon: '📉', color: 'rose' },
-        { label: 'Loans',       value: fmt(totalLoanLiability),      icon: '🏦', color: 'amber' },
+        { label: 'Rent Advance', value: fmt(totalDepositsHeld),      icon: '🔑', color: 'indigo' },
       ],
     };
   }
@@ -266,6 +365,9 @@ function generateAIResponse(
     if (totalLoanLiability > totalBalance * 2) tips.push('⚠️ Your loan amount is very high vs. cash. Pay extra EMI when possible.');
     if (totalPendingWages > 0) tips.push(`⚠️ ${fmt(totalPendingWages)} in pending worker wages. Settle soon to maintain trust.`);
     if (netSavingsThisMonth < 0) tips.push('⚠️ Spending more than earning this month. Review non-essential expenses.');
+    if (rentalProperties.length > 0 && totalRentCollectedThisMonth < totalMonthlyRentExpected) {
+      tips.push(`💡 You have ${fmt(totalMonthlyRentExpected - totalRentCollectedThisMonth)} pending rent to collect this month.`);
+    }
     if (goals.length === 0) tips.push('💡 Set savings goals in the Goals tab to stay motivated.');
     if (budgets.length === 0) tips.push('💡 Add budgets for categories like farm inputs to control spending.');
     if (activeSavings.length > 0) tips.push(`✅ You have ${activeSavings.length} active chit fund(s) — stay consistent with payments!`);
@@ -282,12 +384,17 @@ function generateAIResponse(
 
   // FALLBACK
   return {
-    text: `🤔 I didn't understand that. Here are some things you can ask:\n\n• *"What is my net worth?"*\n• *"Show my income this month"*\n• *"How much loan do I have?"*\n• *"Show chit fund details"*\n• *"Farm summary"*\n• *"Give me financial advice"*\n• *"Full summary report"*`,
+    text: `🤔 I didn't quite catch that. Here are some things you can ask or tell me:\n\n• *"How to manage shop rent and cleaning deduction?"*\n• *"What is my net worth?"*\n• *"Show my rental properties"* (Shop / House)\n• *"Add shop rent 8000"*\n• *"Vacate house advance 50000 reduce 5000 cleaning"*\n• *"Give me financial advice"*\n• *"Show chit fund details"*\n• *"Full summary report"*`,
+    actions: [
+      { label: '🏠 Rentals Hub', action: '__NAV_TAB__', payload: { tab: 'rentals' } },
+      { label: '💎 Net Worth',   action: '__SEND_PROMPT__', payload: { text: 'What is my net worth?' } },
+      { label: '➕ Add Expense', action: '__OPEN_QUICK_ADD__', payload: { type: 'expense' } },
+    ],
   };
 }
 
 // ─────────────────────────────────────────────
-// MARKDOWN RENDERER (bold + newlines)
+// MARKDOWN RENDERER
 // ─────────────────────────────────────────────
 function RenderMarkdown({ text }: { text: string }) {
   return (
@@ -352,9 +459,10 @@ function TypingIndicator() {
 }
 
 // ─────────────────────────────────────────────
-// NATURAL LANGUAGE TRANSACTION PARSER
+// NATURAL LANGUAGE TRANSACTION PARSER TYPES
 // ─────────────────────────────────────────────
-interface ParsedAddIntent {
+export interface ParsedAddResultDirect {
+  kind: 'direct';
   type: 'expense' | 'income';
   amount: number;
   description: string;
@@ -363,93 +471,208 @@ interface ParsedAddIntent {
   accountId: string;
   accountName: string;
   paymentMode: 'cash' | 'bank' | 'upi';
+  propertyId?: string;
+  propertyName?: string;
+  targetType?: 'rental_income' | 'rental_advance' | 'rental_advance_refund' | 'property_maintenance';
 }
 
+export interface ParsedAddResultAmbiguous {
+  kind: 'ambiguous_amount';
+  amount: number;
+  rawText: string;
+}
+
+export interface ParsedAddResultDeduction {
+  kind: 'deduction';
+  advanceAmount: number;
+  deductionAmount: number;
+  deductionReason: string;
+  netRefund: number;
+  propertyId?: string;
+  propertyName?: string;
+}
+
+export type ParsedIntent = ParsedAddResultDirect | ParsedAddResultAmbiguous | ParsedAddResultDeduction | null;
+
+// ─────────────────────────────────────────────
+// NATURAL LANGUAGE TRANSACTION PARSER
+// ─────────────────────────────────────────────
 function tryParseAddIntent(
   rawInput: string,
   categories: Category[],
-  accounts: Account[]
-): ParsedAddIntent | null {
+  accounts: Account[],
+  properties: RentalProperty[] = []
+): ParsedIntent {
   const input = rawInput.trim();
   const lower = input.toLowerCase();
 
-  // 1. Amount match
-  const amountMatch = input.match(/(?:₹|rs\.?|inr)?\s*([0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?)\s*(?:rs|rupees|ரூபாய்|k\b)?/i);
-  if (!amountMatch) return null;
-
-  let rawNum = amountMatch[1].replace(/,/g, '');
-  let amount = parseFloat(rawNum);
-  if (isNaN(amount) || amount <= 0) return null;
-
-  if (/(\d+)\s*k\b/i.test(input)) {
-    const kMatch = input.match(/(\d+)\s*k\b/i);
-    if (kMatch) amount = parseFloat(kMatch[1]) * 1000;
-  }
-
-  // 2. Intent validation
-  const isExplicitAdd = /^(add|record|entry|spent|spend|paid|cost|buy|bought|received|earned|got|செலவு|வரவு|வாங்கியது|கொடுத்தேன்)/i.test(lower);
-  const hasKeyword = /expense|income|spent|spend|paid|received|earned|sale|sold|salary|cost|வாங்கியது|கொடுத்தேன்|செலவு|வரவு|விற்பனை|சம்பளம்/i.test(lower);
-  const isQuestion = /^(what|how|show|list|tell|view|give|is|who|என்ன|எவ்வளவு|காட்டு)/i.test(lower);
+  // 1. Ignore questions completely (send to question generator)
+  const isQuestion = /^(what|how|show|list|tell|view|give|is|who|guide|explain|details|info|என்ன|எவ்வளவு|காட்டு|எப்படி)\b/i.test(lower);
   if (isQuestion) return null;
 
-  if (!isExplicitAdd && !hasKeyword) {
-    const words = lower.split(/\s+/).filter(Boolean);
-    if (words.length > 5) return null;
+  // 2. Extract all numbers
+  const numberMatches = Array.from(input.matchAll(/(?:₹|rs\.?|inr)?\s*([0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?)\s*(?:rs|rupees|ரூபாய்|k\b)?/gi));
+  if (numberMatches.length === 0) return null;
+
+  const parsedNumbers: number[] = [];
+  for (const m of numberMatches) {
+    let val = parseFloat(m[1].replace(/,/g, ''));
+    if (!isNaN(val) && val > 0) {
+      if (m[0].toLowerCase().includes('k')) val *= 1000;
+      parsedNumbers.push(val);
+    }
+  }
+  if (parsedNumbers.length === 0) return null;
+
+  // 3. CHECK DEPOSIT DEDUCTION / VACATE SETTLEMENT INTENT
+  // Keywords: reduce, deduct, cleaning, painting, repair, damage, vacate, return advance, half
+  const hasDeductionWord = /(clean|cleaning|சுத்தம்|துப்புரவு|paint|painting|damage|repair|பழுது|deduct|deduction|reduce|கழிவு|குறை|refund|திருப்பி)/i.test(lower);
+  const hasRentalContext = /(advance|deposit|முன்பணம்|tenant|vacate|leaving|rent|வாடகை|house|shop|வீடு|கடை)/i.test(lower);
+
+  if (hasDeductionWord && (hasRentalContext || /half|பாதி/i.test(lower))) {
+    // Try to match property
+    const matchedProp = properties.find(p => lower.includes(p.name.toLowerCase()) || (p.tenantName && lower.includes(p.tenantName.toLowerCase())))
+      || properties[0];
+
+    let advanceAmount = matchedProp?.depositAmount || 0;
+    let deductionAmount = 0;
+    let reason = 'Cleaning & Maintenance';
+
+    if (/clean|சுத்தம்|துப்புரவு/i.test(lower)) reason = 'Cleaning (சுத்தம்)';
+    else if (/paint/i.test(lower)) reason = 'Painting (வண்ணம்)';
+    else if (/damage|repair|பழுது/i.test(lower)) reason = 'Repairs & Damage (பழுது)';
+
+    if (parsedNumbers.length >= 2) {
+      advanceAmount = Math.max(...parsedNumbers);
+      deductionAmount = Math.min(...parsedNumbers);
+    } else if (parsedNumbers.length === 1) {
+      const singleNum = parsedNumbers[0];
+      if (/half|பாதி/i.test(lower)) {
+        advanceAmount = singleNum;
+        deductionAmount = singleNum / 2;
+      } else if (/reduce|deduct|cleaning|துப்புரவு|சுத்தம்/i.test(lower) && singleNum < advanceAmount) {
+        deductionAmount = singleNum;
+      } else {
+        advanceAmount = singleNum;
+        deductionAmount = 0;
+      }
+    }
+
+    const netRefund = Math.max(0, advanceAmount - deductionAmount);
+    return {
+      kind: 'deduction',
+      advanceAmount,
+      deductionAmount,
+      deductionReason: reason,
+      netRefund,
+      propertyId: matchedProp?.id,
+      propertyName: matchedProp?.name,
+    };
   }
 
-  // 3. Determine type
+  // 4. CHECK AMBIGUOUS AMOUNT
+  // Example user query: "add amount to 1000", "amount to 1000", "add 1000", "1000 add", "change amount 1000", "reduce amount 1000"
+  // Has an amount, but lacks category keywords and explicit direction
+  const hasSpecificCategoryKeyword = /(rent|வாடகை|advance|முன்பணம்|shop|house|வீடு|கடை|tenant|fuel|petrol|diesel|டீசல்|fertilizer|உரம்|manure|seed|விதை|pesticide|பூச்சி|tractor|டிராக்டர்|labor|கூலி|wage|pipe|feed|தீவனம்|milk|பால்|vet|coconut|தேங்காய்|crop|நெல்|கரும்பு|banana|வாழை|grocery|food|tea|மளிகை|salary|சம்பளம்|eb|current|electricity|மின்|recharge|doctor|medicine|மருந்து)/i.test(lower);
+
+  const isGenericAmountPhrase = /^(add\s+)?(amount\s+)?(to\s+)?([0-9]+[k]?)\s*(add|reduce|tage|tag|rupees|rs|ரூபாய்)?$/i.test(lower)
+    || /^(amount\s+to\s+[0-9]+)/i.test(lower)
+    || /^(add\s+[0-9]+)$/i.test(lower)
+    || /^([0-9]+\s+add)$/i.test(lower);
+
+  if (!hasSpecificCategoryKeyword && (isGenericAmountPhrase || lower.split(/\s+/).length <= 4)) {
+    return {
+      kind: 'ambiguous_amount',
+      amount: parsedNumbers[0],
+      rawText: input,
+    };
+  }
+
+  // 5. PARSE DIRECT TRANSACTION
+  let amount = parsedNumbers[0];
   let type: 'expense' | 'income' = 'expense';
-  if (/income|received|earned|got|sale|sold|salary|harvest|bonus|dividend|வரவு|வந்தது|விற்றது|சம்பளம்|அறுவடை/i.test(lower)) {
-    type = 'income';
+  let targetType: 'rental_income' | 'rental_advance' | 'rental_advance_refund' | 'property_maintenance' | undefined;
+  let matchedCat: Category | undefined;
+  let propertyId: string | undefined;
+  let propertyName: string | undefined;
+
+  // Check property matching
+  const matchedProp = properties.find(p => lower.includes(p.name.toLowerCase()) || (p.tenantName && lower.includes(p.tenantName.toLowerCase())));
+  if (matchedProp) {
+    propertyId = matchedProp.id;
+    propertyName = matchedProp.name;
   }
 
-  // 4. Determine category
-  let matchedCat: Category | undefined;
-  if (/fuel|diesel|petrol|bike|car|auto|transport|டீசல்|பெட்ரோல்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_fuel');
-  } else if (/fertilizer|manure|dap|potash|urea|உரம்|சாணம்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_farm_fertilizer');
-  } else if (/labor|labour|coolie|wage|worker|கூலி|ஆட்கள்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_farm_labor');
-  } else if (/seed|sapling|plant|விதை|நாற்று|கன்று/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_farm_seeds');
-  } else if (/pesticide|spray|poison|மருந்து தெளிப்பு|பூச்சிக்கொல்லி/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_farm_pesticide');
-  } else if (/tractor|plough|rotavator|டிராக்டர்|உழவு/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_farm_tractor');
-  } else if (/pipe|drip|motor|pump|irrigation|பாசனம்|பம்பு/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_farm_irrigation');
-  } else if (/tree|coconut prune|கவாத்து|மரம்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_tree_maintenance');
-  } else if (/feed|punnakku|thavudu|தீவனம்|புண்ணாக்கு|தவிடு/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_animal_feed');
-  } else if (/vet|cow medicine|கால்நடை மருத்துவம்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_animal_medical');
-  } else if (/medicine|hospital|doctor|tablet|medical|மருத்துவம்|மருந்து/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_human_medical');
-  } else if (/recharge|mobile|airtel|jio|dth|ரீசார்ஜ்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_mobile_recharge');
-  } else if (/eb|electricity|current bill|மின்சாரம்|மின்கட்டணம்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_eb_electricity');
-  } else if (/milk|dairy|பால்|கறவை/i.test(lower)) {
-    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_milk_sale') : categories.find(c => c.id === 'cat_animal_feed');
-  } else if (/coconut|copra|தேங்காய்|கொப்பரை/i.test(lower)) {
-    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_coconut_sale') : categories.find(c => c.id === 'cat_tree_maintenance');
-  } else if (/crop|paddy|sugarcane|turmeric|banana|நெல்|கரும்பு|வாழை|மஞ்சள்/i.test(lower)) {
-    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_crop_sale') : categories.find(c => c.id === 'cat_farm_seeds');
-  } else if (/vegetable|onion|tomato|காய்கறி|வெங்காயம்/i.test(lower)) {
-    matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_vegetable_sale') : categories.find(c => c.id === 'cat_groceries');
-  } else if (/salary|company job|சம்பளம்/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_salary');
-  } else if (/grocery|food|tea|coffee|lunch|dinner|hotel|snacks|சாப்பாடு|மளிகை/i.test(lower)) {
-    matchedCat = categories.find(c => c.id === 'cat_groceries');
+  // Check Rent / Advance specifics
+  if (/rent\s+advance|advance\s+deposit|security\s+deposit|house\s+advance|shop\s+advance|வாடகை\s+முன்பணம்|அட்வான்ஸ்|முன்பணம்/i.test(lower)) {
+    type = 'income';
+    targetType = 'rental_advance';
+    matchedCat = categories.find(c => c.id === 'cat_rental_advance');
+  } else if (/shop\s+rent|house\s+rent|rent\s+income|received\s+rent|வாடகை\s+வந்தது|வாடகை\s+வரவு|வாடகை/i.test(lower)) {
+    type = 'income';
+    targetType = 'rental_income';
+    matchedCat = categories.find(c => c.id === 'cat_rental_income');
+  } else if (/advance\s+refund|return\s+advance|refund\s+deposit|அட்வான்ஸ்\s+திருப்பி/i.test(lower)) {
+    type = 'expense';
+    targetType = 'rental_advance_refund';
+    matchedCat = categories.find(c => c.id === 'cat_rental_advance_refund');
+  } else if (/cleaning|துப்புரவு|painting|vannam|repair|maintenance|பராமரிப்பு/i.test(lower) && /shop|house|வீடு|கடை|property|rent/i.test(lower)) {
+    type = 'expense';
+    targetType = 'property_maintenance';
+    matchedCat = categories.find(c => c.id === 'cat_property_maintenance');
+  } else {
+    // Normal income keywords
+    if (/income|received|earned|got|sale|sold|salary|harvest|bonus|dividend|வரவு|வந்தது|விற்றது|சம்பளம்|அறுவடை/i.test(lower)) {
+      type = 'income';
+    }
+
+    // Category mapping
+    if (/fuel|diesel|petrol|bike|car|auto|transport|டீசல்|பெட்ரோல்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_fuel');
+    } else if (/fertilizer|manure|dap|potash|urea|உரம்|சாணம்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_farm_fertilizer');
+    } else if (/labor|labour|coolie|wage|worker|கூலி|ஆட்கள்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_farm_labor');
+    } else if (/seed|sapling|plant|விதை|நாற்று|கன்று/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_farm_seeds');
+    } else if (/pesticide|spray|poison|மருந்து தெளிப்பு|பூச்சிக்கொல்லி/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_farm_pesticide');
+    } else if (/tractor|plough|rotavator|டிராக்டர்|உழவு/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_farm_tractor');
+    } else if (/pipe|drip|motor|pump|irrigation|பாசனம்|பம்பு/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_farm_irrigation');
+    } else if (/tree|coconut prune|கவாத்து|மரம்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_tree_maintenance');
+    } else if (/feed|punnakku|thavudu|தீவனம்|புண்ணாக்கு|தவிடு/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_animal_feed');
+    } else if (/vet|cow medicine|கால்நடை மருத்துவம்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_animal_medical');
+    } else if (/medicine|hospital|doctor|tablet|medical|மருத்துவம்|மருந்து/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_human_medical');
+    } else if (/recharge|mobile|airtel|jio|dth|ரீசார்ஜ்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_mobile_recharge');
+    } else if (/eb|electricity|current bill|மின்சாரம்|மின்கட்டணம்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_eb_electricity');
+    } else if (/milk|dairy|பால்|கறவை/i.test(lower)) {
+      matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_milk_sale') : categories.find(c => c.id === 'cat_animal_feed');
+    } else if (/coconut|copra|தேங்காய்|கொப்பரை/i.test(lower)) {
+      matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_coconut_sale') : categories.find(c => c.id === 'cat_tree_maintenance');
+    } else if (/crop|paddy|sugarcane|turmeric|banana|நெல்|கரும்பு|வாழை|மஞ்சள்/i.test(lower)) {
+      matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_crop_sale') : categories.find(c => c.id === 'cat_farm_seeds');
+    } else if (/vegetable|onion|tomato|காய்கறி|வெங்காயம்/i.test(lower)) {
+      matchedCat = type === 'income' ? categories.find(c => c.id === 'cat_vegetable_sale') : categories.find(c => c.id === 'cat_groceries');
+    } else if (/salary|company job|சம்பளம்/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_salary');
+    } else if (/grocery|food|tea|coffee|lunch|dinner|hotel|snacks|சாப்பாடு|மளிகை/i.test(lower)) {
+      matchedCat = categories.find(c => c.id === 'cat_groceries');
+    }
   }
 
   if (!matchedCat) {
     matchedCat = categories.find(c => c.type === type) || categories[0];
   }
 
-  // 5. Account & Mode
+  // Account & Mode
   let matchedAcc: Account | undefined;
   let paymentMode: 'cash' | 'bank' | 'upi' = 'cash';
   if (/bank|online|transfer|வங்கி/i.test(lower)) {
@@ -466,7 +689,7 @@ function tryParseAddIntent(
     matchedAcc = accounts.find(a => a.isDefault) || accounts[0] || ({ id: 'acc_cash', name: 'Cash in Hand' } as Account);
   }
 
-  // 6. Clean Description
+  // Description
   let cleaned = input
     .replace(/(?:₹|rs\.?|inr)?\s*[0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?\s*(?:rs|rupees|ரூபாய்|k\b)?/gi, '')
     .replace(/^(add|record|spent|spend|paid|cost|bought|buy|received|earned|got|செலவு|வரவு|வாங்கியது|கொடுத்தேன்)\s+/gi, '')
@@ -479,6 +702,7 @@ function tryParseAddIntent(
   }
 
   return {
+    kind: 'direct',
     type,
     amount,
     description: cleaned,
@@ -487,6 +711,9 @@ function tryParseAddIntent(
     accountId: matchedAcc.id,
     accountName: matchedAcc.name,
     paymentMode,
+    propertyId,
+    propertyName,
+    targetType,
   };
 }
 
@@ -494,32 +721,37 @@ function tryParseAddIntent(
 // QUICK ACTION CHIPS
 // ─────────────────────────────────────────────
 const QUICK_QUESTIONS = [
-  { label: '➕ Add Expense', q: '__ACTION_ADD_EXPENSE__' },
-  { label: '➕ Add Income',  q: '__ACTION_ADD_INCOME__' },
-  { label: '🔄 Sync to Sheet', q: 'sync sheet now' },
-  { label: '💎 Net Worth',   q: 'What is my net worth?' },
-  { label: '📋 Full Report', q: 'Show me full summary report' },
-  { label: '💚 Income',      q: 'Show my income this month' },
-  { label: '🔴 Expenses',    q: 'Show my expenses this month' },
-  { label: '🏦 Loans',       q: 'Show my loan details' },
-  { label: '🪙 Chit Funds',  q: 'Show chit fund and savings schemes' },
-  { label: '🌾 Farm',        q: 'Give me farm summary' },
-  { label: '🐄 Livestock',   q: 'Show livestock and milk details' },
-  { label: '👷 Wages',       q: 'Show worker wages and pending amount' },
+  { label: '🏠 Rentals Hub',    q: 'Show my rental properties' },
+  { label: '➕ Add Expense',     q: '__ACTION_ADD_EXPENSE__' },
+  { label: '➕ Add Income',      q: '__ACTION_ADD_INCOME__' },
+  { label: '💰 Shop/House Rent', q: 'How to manage shop rent and advance deposit?' },
+  { label: '🔄 Sync to Sheet',   q: 'sync sheet now' },
+  { label: '💎 Net Worth',       q: 'What is my net worth?' },
+  { label: '📋 Full Report',     q: 'Show me full summary report' },
+  { label: '🏦 Loans',           q: 'Show my loan details' },
+  { label: '🪙 Chit Funds',      q: 'Show chit fund and savings schemes' },
+  { label: '🌾 Farm',            q: 'Give me farm summary' },
+  { label: '🐄 Livestock',       q: 'Show livestock and milk details' },
+  { label: '👷 Wages',           q: 'Show worker wages and pending amount' },
 ];
 
 // ─────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
-export const AIAssistant: React.FC = () => {
+export const AIAssistant: React.FC<AIAssistantProps> = ({ onNavigate }) => {
   const financeCtx = useFinance();
   const aiCtx = buildAIContext(financeCtx);
 
   const [messages, setMessages] = useState<Message[]>([{
     id: 'welcome',
     role: 'ai',
-    text: `👋 வணக்கம் ${aiCtx.userName}! I'm your **Kanakku360 AI Assistant**.\n\nNow I can both **read your finances** and **add new entries** directly into your accounts & Google Sheet!\n\n💡 **You can try:**\n• *"Spent 500 for diesel"*\n• *"Add income 12000 from milk sale"*\n• *"செலவு 350 மளிகை"*\n• *"Sync to sheet"*\n• *"What is my net worth?"*`,
+    text: `👋 வணக்கம் ${aiCtx.userName}! I'm your **Kanakku360 AI Assistant**.\n\nNow I can help you with **Shop & House Rentals**, **Monthly Rent & Advance Deposits**, **Cleaning/Repairs Deductions upon vacating**, and direct Google Sheets syncing!\n\n💡 **You can try:**\n• *"Add shop rent 8000"*\n• *"How to manage shop rent and cleaning deduction?"*\n• *"Vacate shop advance 50000 reduce 5000 cleaning"*\n• *"Add amount to 1000"* (I will ask for clarification instead of guessing!)\n• *"Sync to sheet"*\n• *"What is my net worth?"*`,
     timestamp: new Date(),
+    actions: [
+      { label: '🏠 Rentals Hub', action: '__NAV_TAB__', payload: { tab: 'rentals' } },
+      { label: '💎 Net Worth', action: '__SEND_PROMPT__', payload: { text: 'What is my net worth?' } },
+      { label: '➕ Add Entry', action: '__OPEN_QUICK_ADD__' },
+    ],
   }]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -537,6 +769,132 @@ export const AIAssistant: React.FC = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  const handleActionClick = async (action: MessageAction) => {
+    if (action.action === '__NAV_TAB__') {
+      if (onNavigate && action.payload?.tab) {
+        onNavigate(action.payload.tab);
+      }
+    } else if (action.action === '__OPEN_QUICK_ADD__') {
+      if (action.payload?.amount) setQaAmount(String(action.payload.amount));
+      if (action.payload?.type) setQaType(action.payload.type);
+      if (action.payload?.category) setQaCategory(action.payload.category);
+      if (action.payload?.desc) setQaDescription(action.payload.desc);
+      setShowQuickAdd(true);
+    } else if (action.action === '__CONFIRM_QUICK_ADD__') {
+      const payload = action.payload;
+      const cat = financeCtx.categories.find(c => c.id === payload.category) || financeCtx.categories.find(c => c.type === payload.type);
+      const acc = financeCtx.accounts[0];
+      const catName = cat?.name || payload.type;
+      const desc = payload.desc || catName;
+
+      try {
+        await financeCtx.addTransaction({
+          date: new Date().toISOString().split('T')[0],
+          type: payload.type,
+          amount: payload.amount,
+          category: cat?.id || (payload.type === 'income' ? 'cat_rental_income' : 'cat_groceries'),
+          accountId: acc?.id || 'acc_cash',
+          description: desc,
+          paymentMode: 'cash',
+          targetType: payload.targetType,
+        });
+
+        let syncSuccess = false;
+        if (financeCtx.settings.sheetUrl) {
+          syncSuccess = await financeCtx.syncWithGoogleSheet('push');
+        }
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `u_${Date.now()}`,
+            role: 'user',
+            text: `Confirmed: ${payload.desc} — ${aiCtx.fmt(payload.amount)}`,
+            timestamp: new Date(),
+          },
+          {
+            id: `ai_${Date.now() + 1}`,
+            role: 'ai',
+            text: `✅ **Recorded as ${catName}!**\n\n• 💰 **Amount:** ${aiCtx.fmt(payload.amount)}\n• 🏷️ **Category:** ${catName}\n• 🏦 **Account:** ${acc?.name || 'Cash'}\n• 📝 **Note:** ${desc}\n\n${financeCtx.settings.sheetUrl ? (syncSuccess ? '📊 **Google Sheet:** Synced & updated live! ✅' : '📊 **Google Sheet:** Synced (Sync queued)') : '💡 **Tip:** Connect Google Sheet in Settings to auto-sync!'}`,
+            timestamp: new Date(),
+            cards: [
+              { label: 'Amount', value: aiCtx.fmt(payload.amount), icon: payload.type === 'income' ? '💚' : '🔴', color: payload.type === 'income' ? 'emerald' : 'rose' },
+              { label: 'Category', value: catName.split('(')[0].trim(), icon: '🏷️', color: 'indigo' },
+            ],
+          },
+        ]);
+        financeCtx.addToast('Entry recorded successfully!', 'success');
+      } catch (err) {
+        console.error(err);
+        financeCtx.addToast('Failed to save entry', 'error');
+      }
+    } else if (action.action === '__CONFIRM_SETTLEMENT__') {
+      const payload = action.payload;
+      try {
+        await financeCtx.addTransaction({
+          date: new Date().toISOString().split('T')[0],
+          type: 'expense',
+          amount: payload.netRefund,
+          category: 'cat_rental_advance_refund',
+          accountId: 'acc_cash',
+          description: `Advance Refund to Tenant (${payload.propertyName || 'Property'})`,
+          paymentMode: 'cash',
+          targetType: 'rental_advance_refund',
+        });
+
+        if (payload.deductionAmount > 0) {
+          await financeCtx.addTransaction({
+            date: new Date().toISOString().split('T')[0],
+            type: 'expense',
+            amount: payload.deductionAmount,
+            category: 'cat_property_maintenance',
+            accountId: 'acc_cash',
+            description: `${payload.deductionReason || 'Cleaning & Maintenance'} (${payload.propertyName || 'Property'})`,
+            paymentMode: 'cash',
+            targetType: 'property_maintenance',
+          });
+        }
+
+        if (financeCtx.settings.sheetUrl) {
+          await financeCtx.syncWithGoogleSheet('push');
+        }
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `u_${Date.now()}`,
+            role: 'user',
+            text: `Confirmed Refund: ${aiCtx.fmt(payload.netRefund)} with ${aiCtx.fmt(payload.deductionAmount)} deduction`,
+            timestamp: new Date(),
+          },
+          {
+            id: `ai_${Date.now() + 1}`,
+            role: 'ai',
+            text: `✅ **Rental Deposit Settlement Completed!**\n\n` +
+              `• 🔑 **Initial Advance:** ${aiCtx.fmt(payload.advanceAmount)}\n` +
+              `• 🧹 **Deduction (${payload.deductionReason}):** ${aiCtx.fmt(payload.deductionAmount)} (Logged as Maintenance Expense)\n` +
+              `• 💵 **Net Refunded to Tenant:** ${aiCtx.fmt(payload.netRefund)} (Logged as Advance Refund Expense)\n\n` +
+              `Both entries have been saved to your accounts and synced with Google Sheet!`,
+            timestamp: new Date(),
+            cards: [
+              { label: 'Refunded', value: aiCtx.fmt(payload.netRefund), icon: '💵', color: 'indigo' },
+              { label: 'Deduction', value: aiCtx.fmt(payload.deductionAmount), icon: '🧹', color: 'amber' },
+            ],
+            actions: [
+              { label: '🏠 View Rentals Hub', action: '__NAV_TAB__', payload: { tab: 'rentals' } },
+            ],
+          },
+        ]);
+        financeCtx.addToast('Rental settlement recorded!', 'success');
+      } catch (err) {
+        console.error(err);
+        financeCtx.addToast('Failed to settle deposit', 'error');
+      }
+    } else if (action.action === '__SEND_PROMPT__') {
+      sendMessage(action.payload.text);
+    }
+  };
 
   const handleQuickAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -631,7 +989,7 @@ export const AIAssistant: React.FC = () => {
           id: `ai_${Date.now()}`,
           role: 'ai',
           text: ok
-            ? `🔄 **Google Sheet Synced Successfully!**\n\nAll your latest transactions, account balances, farm logs, livestock entries, loans, and chit fund schemes have been saved and pushed live to your Google Sheet database.\n\n📊 **Sheet Status:** Active & Updated\n⏱️ **Timestamp:** ${new Date().toLocaleTimeString('en-IN')}`
+            ? `🔄 **Google Sheet Synced Successfully!**\n\nAll your latest transactions, account balances, rental properties, farm logs, livestock entries, loans, and chit fund schemes have been saved and pushed live to your Google Sheet database.\n\n📊 **Sheet Status:** Active & Updated\n⏱️ **Timestamp:** ${new Date().toLocaleTimeString('en-IN')}`
             : `⚠️ **Google Sheet Sync encountered an issue.**\nPlease verify your Google Apps Script URL in **Settings > Google Sheet Sync**.`,
           timestamp: new Date(),
           cards: [
@@ -651,18 +1009,108 @@ export const AIAssistant: React.FC = () => {
       return;
     }
 
-    // 3. Check for Add Data intent
-    const parsedAdd = tryParseAddIntent(q, financeCtx.categories, financeCtx.accounts);
-    if (parsedAdd) {
+    // 3. Smart Parse Intent
+    const parsedIntent = tryParseAddIntent(q, financeCtx.categories, financeCtx.accounts, financeCtx.rentalProperties);
+
+    // 3A. Ambiguous Amount -> User specified amount without context (e.g. "add amount to 1000")
+    if (parsedIntent && parsedIntent.kind === 'ambiguous_amount') {
+      setIsTyping(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          role: 'ai',
+          text: `❓ **How would you like to record ${aiCtx.fmt(parsedIntent.amount)}?**\n\n` +
+            `You typed **"${q}"** with amount **${aiCtx.fmt(parsedIntent.amount)}**, but did not specify what it is for.\n\n` +
+            `Please choose what this **${aiCtx.fmt(parsedIntent.amount)}** represents:`,
+          timestamp: new Date(),
+          actions: [
+            {
+              label: '💚 Income',
+              action: '__CONFIRM_QUICK_ADD__',
+              payload: { type: 'income', amount: parsedIntent.amount, category: 'cat_crop_sale', desc: 'Income' },
+            },
+            {
+              label: '🔴 Expense',
+              action: '__CONFIRM_QUICK_ADD__',
+              payload: { type: 'expense', amount: parsedIntent.amount, category: 'cat_groceries', desc: 'Expense' },
+            },
+            {
+              label: '🏠 Shop/House Rent',
+              action: '__CONFIRM_QUICK_ADD__',
+              payload: { type: 'income', amount: parsedIntent.amount, category: 'cat_rental_income', desc: 'Rental Income', targetType: 'rental_income' },
+            },
+            {
+              label: '🔑 Rental Advance',
+              action: '__CONFIRM_QUICK_ADD__',
+              payload: { type: 'income', amount: parsedIntent.amount, category: 'cat_rental_advance', desc: 'Rental Advance Deposit', targetType: 'rental_advance' },
+            },
+            {
+              label: '🧹 Cleaning Deduction',
+              action: '__CONFIRM_QUICK_ADD__',
+              payload: { type: 'expense', amount: parsedIntent.amount, category: 'cat_property_maintenance', desc: 'Cleaning Deduction', targetType: 'property_maintenance' },
+            },
+            {
+              label: '✏️ Fill Quick Form',
+              action: '__OPEN_QUICK_ADD__',
+              payload: { amount: parsedIntent.amount },
+            },
+          ],
+        },
+      ]);
+      return;
+    }
+
+    // 3B. Deposit Deduction / Vacate Settlement
+    if (parsedIntent && parsedIntent.kind === 'deduction') {
+      setIsTyping(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai_${Date.now()}`,
+          role: 'ai',
+          text: `🤝 **Rental Deposit Settlement & Cleaning Deduction Breakdown**\n\n` +
+            `• 🔑 **Initial Advance / Deposit:** ${aiCtx.fmt(parsedIntent.advanceAmount)}\n` +
+            `• 🧹 **Deduction (${parsedIntent.deductionReason}):** -${aiCtx.fmt(parsedIntent.deductionAmount)}\n` +
+            `• 💵 **Net Refund to Tenant:** **${aiCtx.fmt(parsedIntent.netRefund)}**\n\n` +
+            `Would you like to confirm this refund and record the cleaning deduction? Or manage it in the Rentals Hub?`,
+          timestamp: new Date(),
+          cards: [
+            { label: 'Advance Deposit', value: aiCtx.fmt(parsedIntent.advanceAmount), icon: '🔑', color: 'indigo' },
+            { label: 'Deduction',       value: `-${aiCtx.fmt(parsedIntent.deductionAmount)}`, icon: '🧹', color: 'amber' },
+            { label: 'Net Refund',      value: aiCtx.fmt(parsedIntent.netRefund),     icon: '💵', color: 'emerald' },
+          ],
+          actions: [
+            {
+              label: '✅ Confirm Refund & Deduction',
+              action: '__CONFIRM_SETTLEMENT__',
+              payload: parsedIntent,
+            },
+            {
+              label: '🏠 Open Rentals Hub',
+              action: '__NAV_TAB__',
+              payload: { tab: 'rentals' },
+            },
+          ],
+        },
+      ]);
+      return;
+    }
+
+    // 3C. Direct Intent (Has category and amount)
+    if (parsedIntent && parsedIntent.kind === 'direct') {
       try {
         await financeCtx.addTransaction({
           date: new Date().toISOString().split('T')[0],
-          type: parsedAdd.type,
-          amount: parsedAdd.amount,
-          category: parsedAdd.categoryId,
-          accountId: parsedAdd.accountId,
-          description: parsedAdd.description,
-          paymentMode: parsedAdd.paymentMode,
+          type: parsedIntent.type,
+          amount: parsedIntent.amount,
+          category: parsedIntent.categoryId,
+          accountId: parsedIntent.accountId,
+          description: parsedIntent.description,
+          paymentMode: parsedIntent.paymentMode,
+          propertyId: parsedIntent.propertyId,
+          propertyName: parsedIntent.propertyName,
+          targetType: parsedIntent.targetType,
         });
 
         let syncSuccess = false;
@@ -674,12 +1122,12 @@ export const AIAssistant: React.FC = () => {
         setMessages(prev => [...prev, {
           id: `ai_${Date.now()}`,
           role: 'ai',
-          text: `✅ **${parsedAdd.type === 'income' ? 'Income Added & Synced!' : 'Expense Added & Synced!'}**\n\n• 💰 **Amount:** ${aiCtx.fmt(parsedAdd.amount)}\n• 🏷️ **Category:** ${parsedAdd.categoryName}\n• 🏦 **Account:** ${parsedAdd.accountName}\n• 📝 **Note:** ${parsedAdd.description}\n• 📅 **Date:** ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n${financeCtx.settings.sheetUrl ? (syncSuccess ? '📊 **Google Sheet:** Synced & saved directly to your spreadsheet! ✅' : '📊 **Google Sheet:** Synced (Sync queued)') : '💡 **Tip:** Connect your Google Sheet in Settings to sync live to your spreadsheet!'}`,
+          text: `✅ **${parsedIntent.type === 'income' ? 'Income Added & Synced!' : 'Expense Added & Synced!'}**\n\n• 💰 **Amount:** ${aiCtx.fmt(parsedIntent.amount)}\n• 🏷️ **Category:** ${parsedIntent.categoryName}\n• 🏦 **Account:** ${parsedIntent.accountName}\n• 📝 **Note:** ${parsedIntent.description}\n• 📅 **Date:** ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n${financeCtx.settings.sheetUrl ? (syncSuccess ? '📊 **Google Sheet:** Synced & saved directly to your spreadsheet! ✅' : '📊 **Google Sheet:** Synced (Sync queued)') : '💡 **Tip:** Connect your Google Sheet in Settings to sync live to your spreadsheet!'}`,
           timestamp: new Date(),
           cards: [
-            { label: 'Amount', value: aiCtx.fmt(parsedAdd.amount), icon: parsedAdd.type === 'income' ? '💚' : '🔴', color: parsedAdd.type === 'income' ? 'emerald' : 'rose' },
-            { label: 'Category', value: parsedAdd.categoryName.split('(')[0].trim(), icon: '🏷️', color: 'indigo' },
-            { label: 'Account', value: parsedAdd.accountName.split('(')[0].trim(), icon: '🏦', color: 'teal' },
+            { label: 'Amount', value: aiCtx.fmt(parsedIntent.amount), icon: parsedIntent.type === 'income' ? '💚' : '🔴', color: parsedIntent.type === 'income' ? 'emerald' : 'rose' },
+            { label: 'Category', value: parsedIntent.categoryName.split('(')[0].trim(), icon: '🏷️', color: 'indigo' },
+            { label: 'Account', value: parsedIntent.accountName.split('(')[0].trim(), icon: '🏦', color: 'teal' },
             { label: 'Sheet Status', value: financeCtx.settings.sheetUrl ? 'Synced Live ✅' : 'Local Only', icon: '📊', color: financeCtx.settings.sheetUrl ? 'emerald' : 'amber' },
           ],
         }]);
@@ -691,18 +1139,18 @@ export const AIAssistant: React.FC = () => {
     }
 
     // 4. Default: Read & Query Engine
-    await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
+    await new Promise(r => setTimeout(r, 450 + Math.random() * 300));
     const resp = generateAIResponse(q, aiCtx);
     setIsTyping(false);
     setMessages(prev => [...prev, {
-      id: `ai_${Date.now()}`, role: 'ai', text: resp.text, timestamp: new Date(), cards: resp.cards,
+      id: `ai_${Date.now()}`, role: 'ai', text: resp.text, timestamp: new Date(), cards: resp.cards, actions: resp.actions,
     }]);
   };
 
   const handleClear = () => {
     setMessages([{
       id: 'clear', role: 'ai',
-      text: `🔄 Chat cleared! Ask me anything or tell me to add an entry, ${aiCtx.userName}.`,
+      text: `🔄 Chat cleared! Ask me anything, check rental properties, or tell me to add an entry, ${aiCtx.userName}.`,
       timestamp: new Date(),
     }]);
   };
@@ -722,7 +1170,7 @@ export const AIAssistant: React.FC = () => {
             <h1 className="text-lg font-black text-white flex items-center gap-2">
               Kanakku360 AI
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold animate-pulse">
-                READ & WRITE
+                ADVANCED RENTALS & WRITE
               </span>
               {hasSheetUrl ? (
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-teal-400 font-medium">
@@ -730,11 +1178,20 @@ export const AIAssistant: React.FC = () => {
                 </span>
               ) : null}
             </h1>
-            <p className="text-[11px] text-slate-400">Ask questions, add expenses & income, and sync to Google Sheets live</p>
+            <p className="text-[11px] text-slate-400">Manage shop/house rent, advance deposits & deductions, track wealth, and sync live</p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('rentals')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 transition cursor-pointer"
+            >
+              <Building2 size={12} />
+              <span>Rentals Hub</span>
+            </button>
+          )}
           <button
             onClick={() => setShowQuickAdd(!showQuickAdd)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
@@ -748,53 +1205,48 @@ export const AIAssistant: React.FC = () => {
           </button>
           <button
             onClick={handleClear}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
+            className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer border border-slate-700/60"
             title="Clear Chat"
           >
-            <RefreshCw size={12} />
-            <span>Clear</span>
+            <RefreshCw size={14} />
           </button>
         </div>
       </div>
 
-      {/* Quick Add Slide-down Form */}
+      {/* Quick Add Embedded Form */}
       {showQuickAdd && (
         <form
           onSubmit={handleQuickAddSubmit}
-          className="glass-panel p-4 rounded-2xl border border-emerald-500/40 mb-3 space-y-3 shadow-lg animate-fadeIn shrink-0"
+          className="mb-3 p-3 rounded-2xl glass-card border border-emerald-500/30 space-y-2 shrink-0 animate-fadeIn"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Plus size={14} className="text-emerald-400" />
-              Quick Add & Sync to Sheet
+              <Plus size={13} className="text-emerald-400" />
+              Quick Add Transaction
             </span>
-            <div className="flex items-center bg-slate-900/60 p-0.5 rounded-xl border border-slate-800 text-[11px]">
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-900 border border-slate-700">
               <button
                 type="button"
                 onClick={() => setQaType('expense')}
-                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
-                  qaType === 'expense'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                  qaType === 'expense' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-slate-400'
                 }`}
               >
-                <ArrowDownLeft size={11} /> Expense
+                Expense
               </button>
               <button
                 type="button"
                 onClick={() => setQaType('income')}
-                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
-                  qaType === 'income'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                  qaType === 'income' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400'
                 }`}
               >
-                <ArrowUpRight size={11} /> Income
+                Income
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
               <label className="text-[10px] text-slate-400 font-medium block mb-1">Amount (₹) *</label>
               <input
@@ -844,7 +1296,7 @@ export const AIAssistant: React.FC = () => {
                 type="text"
                 value={qaDescription}
                 onChange={e => setQaDescription(e.target.value)}
-                placeholder="e.g. Petrol, Fertilizer, Milk"
+                placeholder="e.g. Shop rent, Advance, Cleaning"
                 className="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none"
               />
             </div>
@@ -871,7 +1323,7 @@ export const AIAssistant: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-1 shrink-0" style={{ scrollbarWidth: 'none' }}>
         {QUICK_QUESTIONS.map(q => (
           <button
-            key={q.q}
+            key={q.label}
             onClick={() => sendMessage(q.q)}
             disabled={isTyping}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 hover:border-emerald-500/40 text-xs text-slate-300 hover:text-white whitespace-nowrap transition shrink-0 cursor-pointer disabled:opacity-50"
@@ -899,8 +1351,8 @@ export const AIAssistant: React.FC = () => {
                 : <User size={13} className="text-white" />}
             </div>
 
-            {/* Bubble + cards */}
-            <div className={`flex flex-col gap-2 max-w-[82%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            {/* Bubble + cards + actions */}
+            <div className={`flex flex-col gap-2 max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               <div className={`px-4 py-3 rounded-2xl text-xs leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-indigo-600 text-white rounded-br-sm'
@@ -911,9 +1363,25 @@ export const AIAssistant: React.FC = () => {
                   : <span>{msg.text}</span>}
               </div>
 
+              {/* Summary Cards */}
               {msg.cards && msg.cards.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 w-full">
                   {msg.cards.map((card, ci) => <SummaryCardChip key={ci} card={card} />)}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {msg.actions && msg.actions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 w-full pt-1">
+                  {msg.actions.map((act, ai) => (
+                    <button
+                      key={ai}
+                      onClick={() => handleActionClick(act)}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-white transition cursor-pointer flex items-center gap-1 shadow-sm"
+                    >
+                      {act.label}
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -940,7 +1408,7 @@ export const AIAssistant: React.FC = () => {
               type="text"
               value={inputText}
               onChange={e => setInputText(e.target.value)}
-              placeholder="Ask anything about your finances..."
+              placeholder="Ask anything, add shop rent, return advance with cleaning deduction..."
               disabled={isTyping}
               autoFocus
               className="w-full pl-9 pr-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700 hover:border-slate-600 focus:border-emerald-500/60 text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition"
@@ -955,7 +1423,7 @@ export const AIAssistant: React.FC = () => {
           </button>
         </form>
         <p className="text-[10px] text-slate-600 text-center mt-2">
-          AI reads your live local data — no internet needed
+          AI reads your live local data & syncs directly to Google Sheet
         </p>
       </div>
     </div>

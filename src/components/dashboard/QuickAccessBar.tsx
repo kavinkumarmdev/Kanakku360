@@ -7,6 +7,7 @@ import {
   Coins,
   ArrowLeftRight,
   Milk,
+  Building2,
 } from 'lucide-react';
 
 interface QuickAccessBarProps {
@@ -16,6 +17,7 @@ interface QuickAccessBarProps {
   onAddMilkEntry: () => void;
   onOpenLoansSavings: () => void;
   onOpenTransfer: () => void;
+  onOpenRentals?: () => void;
 }
 
 export const QuickAccessBar: React.FC<QuickAccessBarProps> = ({
@@ -25,8 +27,9 @@ export const QuickAccessBar: React.FC<QuickAccessBarProps> = ({
   onAddMilkEntry,
   onOpenLoansSavings,
   onOpenTransfer,
+  onOpenRentals,
 }) => {
-  const { settings, loans, savings } = useFinance();
+  const { settings, loans, savings, rentalProperties } = useFinance();
   const isTa = settings.language === 'ta';
 
   const activeDuesCount = loans.filter(l => l.status === 'active').length + savings.filter(s => s.status === 'active').length;
@@ -72,17 +75,17 @@ export const QuickAccessBar: React.FC<QuickAccessBarProps> = ({
       onClick: onAddFarmLabor,
     },
     {
-      id: 'milk_entry',
-      titleTa: 'பால் & உற்பத்தி',
-      titleEn: 'Dairy & Yield',
-      subTa: 'தினசரி பால் வரவு',
-      subEn: 'Livestock Sales',
-      icon: Milk,
-      iconColor: 'text-cyan-400',
-      iconBg: 'bg-cyan-500/10 border-cyan-500/20',
-      badge: 'Dairy',
-      badgeClass: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      onClick: onAddMilkEntry,
+      id: 'rentals',
+      titleTa: 'வாடகை & சொத்து',
+      titleEn: 'Shop/House Rent',
+      subTa: 'கடை & வீட்டு வாடகை',
+      subEn: 'Rent & Advance',
+      icon: Building2,
+      iconColor: 'text-teal-400',
+      iconBg: 'bg-teal-500/10 border-teal-500/20',
+      badge: rentalProperties.length > 0 ? `${rentalProperties.length}` : 'Rent',
+      badgeClass: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+      onClick: onOpenRentals || (() => {}),
     },
     {
       id: 'loans_savings',
@@ -98,18 +101,31 @@ export const QuickAccessBar: React.FC<QuickAccessBarProps> = ({
       onClick: onOpenLoansSavings,
     },
     {
+      id: 'milk_entry',
+      titleTa: 'பால் & உற்பத்தி',
+      titleEn: 'Dairy & Yield',
+      subTa: 'தினசரி பால் வரவு',
+      subEn: 'Livestock Sales',
+      icon: Milk,
+      iconColor: 'text-cyan-400',
+      iconBg: 'bg-cyan-500/10 border-cyan-500/20',
+      badge: 'Dairy',
+      badgeClass: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      onClick: onAddMilkEntry,
+    },
+    ...(onOpenTransfer ? [{
       id: 'transfer',
       titleTa: 'பணப் பரிமாற்றம்',
-      titleEn: 'Fund Transfer',
-      subTa: 'வங்கி / ரொக்க மாற்றம்',
-      subEn: 'Account Transfer',
+      titleEn: 'Transfer',
+      subTa: 'கணக்கு மாற்றம்',
+      subEn: 'Between Accounts',
       icon: ArrowLeftRight,
-      iconColor: 'text-slate-300',
-      iconBg: 'bg-slate-800 border-slate-700',
-      badge: 'Transfer',
-      badgeClass: 'bg-slate-800 text-slate-300 border-slate-700',
+      iconColor: 'text-amber-400',
+      iconBg: 'bg-amber-500/10 border-amber-500/20',
+      badge: 'Cash',
+      badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
       onClick: onOpenTransfer,
-    },
+    }] : []),
   ];
 
   return (
@@ -123,7 +139,7 @@ export const QuickAccessBar: React.FC<QuickAccessBarProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
         {quickActions.map(action => {
           const Icon = action.icon;
           return (

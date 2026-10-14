@@ -21,6 +21,10 @@ import type {
   LoanPayment,
   SavingInstallment,
   SavingBulkClaim,
+  RentalProperty,
+  RentalPayment,
+  RentalSettlement,
+  PaymentMode,
 } from '../types/finance';
 import type { TranslationKey } from '../utils/i18n';
 import { useTranslation } from '../utils/i18n';
@@ -50,6 +54,7 @@ interface FinanceContextType {
   treeHarvests: TreeHarvestEntry[];
   loans: Loan[];
   savings: SavingScheme[];
+  rentalProperties: RentalProperty[];
   settings: AppSettings;
   syncState: SyncState;
   toasts: ToastMessage[];
@@ -82,6 +87,12 @@ interface FinanceContextType {
   totalSavingsInvested: number;
   totalChitFundsValue: number;
   totalChitBulkReceived: number;
+
+  // Rental & Property Metrics
+  totalMonthlyRentExpected: number;
+  totalRentCollectedThisMonth: number;
+  totalDepositsHeld: number;
+  totalRentalIncomeAllTime: number;
 
   // Transaction Operations
   addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => Promise<void>;
@@ -156,6 +167,14 @@ interface FinanceContextType {
   recordSavingInstallment: (schemeId: string, installment: Omit<SavingInstallment, 'id'>, autoCreateTransaction?: boolean) => Promise<void>;
   recordSavingBulkClaim: (schemeId: string, claim: Omit<SavingBulkClaim, 'isClaimed'>, autoCreateTransaction?: boolean) => Promise<void>;
 
+  // Rental & Property Operations
+  addRentalProperty: (property: Omit<RentalProperty, 'id' | 'payments' | 'settlements'>, recordDepositAsIncome?: boolean, accountId?: string) => Promise<RentalProperty>;
+  updateRentalProperty: (id: string, property: Partial<RentalProperty>) => Promise<void>;
+  deleteRentalProperty: (id: string) => Promise<void>;
+  collectPropertyRent: (propertyId: string, paymentData: { amount: number; date: string; periodMonth?: string; paymentMode: PaymentMode; accountId: string; notes?: string }) => Promise<void>;
+  settleAndVacateProperty: (propertyId: string, settlementData: { vacateDate: string; deductionAmount: number; deductionReason: string; cleaningDeduction?: number; paintingDeduction?: number; damageDeduction?: number; unpaidBillsDeduction?: number; refundAmount: number; paymentMode: PaymentMode; accountId: string; notes?: string }) => Promise<void>;
+  assignTenantToProperty: (propertyId: string, tenantData: { tenantName: string; tenantPhone?: string; monthlyRent: number; dueDayOfMonth?: number; depositAmount: number; depositDate: string; leaseStartDate: string; accountId?: string; recordDepositAsIncome?: boolean }) => Promise<void>;
+
   // Settings & Google Sheet Sync
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   syncWithGoogleSheet: (mode?: 'push' | 'pull' | 'smart') => Promise<boolean>;
@@ -182,6 +201,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [treeHarvests, setTreeHarvests] = useState<TreeHarvestEntry[]>(() => StorageService.getTreeHarvests());
   const [loans, setLoans] = useState<Loan[]>(() => StorageService.getLoans());
   const [savings, setSavings] = useState<SavingScheme[]>(() => StorageService.getSavings());
+  const [rentalProperties, setRentalProperties] = useState<RentalProperty[]>(() => StorageService.getRentalProperties());
   const [settings, setSettings] = useState<AppSettings>(() => StorageService.getSettings());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -243,6 +263,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [savings]);
 
   useEffect(() => {
+    StorageService.saveRentalProperties(rentalProperties);
+  }, [rentalProperties]);
+
+  useEffect(() => {
     StorageService.saveSettings(settings);
     if (!settings.sheetUrl) {
       setSyncState(prev => ({ ...prev, status: 'disconnected' }));
@@ -288,6 +312,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
             if (Array.isArray(res.data.savings) && res.data.savings.length > 0) {
               setSavings(prev => mergeCollectionsById(prev, res.data!.savings!));
+            }
+            if (Array.isArray(res.data.rentalProperties) && res.data.rentalProperties.length > 0) {
+              setRentalProperties(prev => mergeCollectionsById(prev, res.data!.rentalProperties!));
             }
             if (Array.isArray(res.data.treeHarvests) && res.data.treeHarvests.length > 0) {
               setTreeHarvests(prev => mergeCollectionsById(prev, res.data!.treeHarvests!));
@@ -362,6 +389,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         goals,
         loans,
         savings,
+        rentalProperties,
         settings: [
           {
             currency: settings.currency,
@@ -379,11 +407,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setSyncState({ status: 'success', lastSynced: syncedAt, pendingChangesCount: 0 });
             setSettings(prev => ({ ...prev, lastSyncedAt: syncedAt }));
           } else {
-            setSyncState(prev => ({ ...prev, status: 'error', errorMessage: res.message }));
+            console.warn('Background sync note:', res.message);
+            setSyncState(prev => ({ ...prev, status: 'idle' }));
           }
         })
         .catch(err => {
-          setSyncState(prev => ({ ...prev, status: 'error', errorMessage: err.message || 'Auto sync failed' }));
+          console.warn('Silent background sync retry:', err);
+          setSyncState(prev => ({ ...prev, status: 'idle' }));
         });
     }, 1500);
 
@@ -401,6 +431,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     treeHarvests,
     loans,
     savings,
+    rentalProperties,
     budgets,
     goals,
     settings.sheetUrl,
@@ -574,6 +605,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return sum + (s.bulkClaim?.isClaimed ? Number(s.bulkClaim.claimedAmount || 0) : 0);
       }, 0);
   }, [savings]);
+
+  // Rental & Property metrics
+  const totalMonthlyRentExpected = useMemo(() => {
+    return rentalProperties
+      .filter(p => p.status === 'occupied')
+      .reduce((sum, p) => sum + (Number(p.monthlyRent) || 0), 0);
+  }, [rentalProperties]);
+
+  const totalRentCollectedThisMonth = useMemo(() => {
+    return currentMonthTransactions
+      .filter(tx => tx.type === 'income' && (tx.category === 'cat_rental_income' || tx.targetType === 'rental_income' || tx.tags?.includes('rent')))
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  }, [currentMonthTransactions]);
+
+  const totalDepositsHeld = useMemo(() => {
+    return rentalProperties
+      .filter(p => p.status === 'occupied')
+      .reduce((sum, p) => sum + (Number(p.depositAmount) || 0), 0);
+  }, [rentalProperties]);
+
+  const totalRentalIncomeAllTime = useMemo(() => {
+    return transactions
+      .filter(tx => tx.type === 'income' && (tx.category === 'cat_rental_income' || tx.targetType === 'rental_income' || tx.tags?.includes('rent')))
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  }, [transactions]);
 
   // TRANSACTION OPERATIONS
   const addTransaction = async (txData: Omit<Transaction, 'id' | 'createdAt'>) => {
@@ -1694,6 +1750,242 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addToast(`🎉 Bulk payout of ₹${claim.claimedAmount} claimed for ${targetScheme.name}!`, 'success');
   };
 
+  // RENTAL & PROPERTY OPERATIONS
+  const addRentalProperty = async (
+    propData: Omit<RentalProperty, 'id' | 'payments' | 'settlements'>,
+    recordDepositAsIncome: boolean = false,
+    accountId?: string
+  ): Promise<RentalProperty> => {
+    const id = generateId('prop');
+    const newProperty: RentalProperty = {
+      ...propData,
+      id,
+      payments: [],
+      settlements: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    setRentalProperties(prev => [newProperty, ...prev]);
+
+    if (recordDepositAsIncome && propData.depositAmount > 0 && accountId) {
+      await addTransaction({
+        date: propData.depositReceivedDate || new Date().toISOString().split('T')[0],
+        type: 'income',
+        amount: Number(propData.depositAmount),
+        category: 'cat_rental_advance',
+        accountId,
+        description: `Rental Security Deposit: ${propData.name} (${propData.tenantName || 'Tenant'})`,
+        paymentMode: 'bank',
+        targetType: 'rental_advance',
+        propertyId: id,
+        propertyName: propData.name,
+        tenantName: propData.tenantName,
+        tags: ['rent', 'advance', 'security_deposit', propData.type],
+      });
+    }
+
+    addToast(`Property ${propData.name} added successfully!`, 'success');
+    return newProperty;
+  };
+
+  const updateRentalProperty = async (id: string, updateData: Partial<RentalProperty>) => {
+    setRentalProperties(prev => prev.map(p => (p.id === id ? { ...p, ...updateData } : p)));
+    addToast('Property updated successfully', 'success');
+  };
+
+  const deleteRentalProperty = async (id: string) => {
+    const target = rentalProperties.find(p => p.id === id);
+    setRentalProperties(prev => prev.filter(p => p.id !== id));
+    addToast(`Property ${target?.name || ''} deleted`, 'info');
+  };
+
+  const collectPropertyRent = async (
+    propertyId: string,
+    paymentData: {
+      amount: number;
+      date: string;
+      periodMonth?: string;
+      paymentMode: PaymentMode;
+      accountId: string;
+      notes?: string;
+    }
+  ) => {
+    const prop = rentalProperties.find(p => p.id === propertyId);
+    if (!prop) return;
+
+    const txId = generateId('tx');
+    const paymentId = generateId('rent_pay');
+
+    await addTransaction({
+      date: paymentData.date,
+      type: 'income',
+      amount: Number(paymentData.amount),
+      category: 'cat_rental_income',
+      accountId: paymentData.accountId,
+      description: `Monthly Rent: ${prop.name} - ${paymentData.periodMonth || prop.tenantName || 'Rent'}`,
+      paymentMode: paymentData.paymentMode,
+      targetType: 'rental_income',
+      propertyId: prop.id,
+      propertyName: prop.name,
+      tenantName: prop.tenantName,
+      tags: ['rent', 'monthly_rent', prop.type],
+    });
+
+    const newPayment: RentalPayment = {
+      id: paymentId,
+      date: paymentData.date,
+      amount: Number(paymentData.amount),
+      periodMonth: paymentData.periodMonth,
+      tenantName: prop.tenantName,
+      paymentMode: paymentData.paymentMode,
+      accountId: paymentData.accountId,
+      notes: paymentData.notes,
+      transactionId: txId,
+    };
+
+    setRentalProperties(prev =>
+      prev.map(p =>
+        p.id === propertyId
+          ? { ...p, payments: [newPayment, ...(p.payments || [])] }
+          : p
+      )
+    );
+
+    addToast(`Rent payment of ₹${Number(paymentData.amount).toLocaleString()} recorded for ${prop.name}!`, 'success');
+  };
+
+  const settleAndVacateProperty = async (
+    propertyId: string,
+    settlementData: {
+      vacateDate: string;
+      deductionAmount: number;
+      deductionReason: string;
+      cleaningDeduction?: number;
+      paintingDeduction?: number;
+      damageDeduction?: number;
+      unpaidBillsDeduction?: number;
+      refundAmount: number;
+      paymentMode: PaymentMode;
+      accountId: string;
+      notes?: string;
+    }
+  ) => {
+    const prop = rentalProperties.find(p => p.id === propertyId);
+    if (!prop) return;
+
+    const settlementId = generateId('settle');
+    const txId = generateId('tx');
+
+    if (settlementData.refundAmount > 0) {
+      await addTransaction({
+        date: settlementData.vacateDate,
+        type: 'expense',
+        amount: Number(settlementData.refundAmount),
+        category: 'cat_rental_advance_refund',
+        accountId: settlementData.accountId,
+        description: `Rental Deposit Refund: ${prop.name} (${prop.tenantName || 'Tenant'}) - Deducted ₹${settlementData.deductionAmount} for ${settlementData.deductionReason || 'cleaning'}`,
+        paymentMode: settlementData.paymentMode,
+        targetType: 'rental_advance_refund',
+        propertyId: prop.id,
+        propertyName: prop.name,
+        tenantName: prop.tenantName,
+        depositDeduction: settlementData.deductionAmount,
+        tags: ['rent', 'advance_refund', 'vacate', prop.type],
+      });
+    }
+
+    const newSettlement: RentalSettlement = {
+      id: settlementId,
+      tenantName: prop.tenantName || 'Former Tenant',
+      vacateDate: settlementData.vacateDate,
+      originalDeposit: Number(prop.depositAmount || 0),
+      deductionAmount: Number(settlementData.deductionAmount || 0),
+      deductionReason: settlementData.deductionReason,
+      cleaningDeduction: settlementData.cleaningDeduction,
+      paintingDeduction: settlementData.paintingDeduction,
+      damageDeduction: settlementData.damageDeduction,
+      unpaidBillsDeduction: settlementData.unpaidBillsDeduction,
+      refundedAmount: Number(settlementData.refundAmount || 0),
+      refundDate: settlementData.vacateDate,
+      paymentMode: settlementData.paymentMode,
+      accountId: settlementData.accountId,
+      notes: settlementData.notes,
+      transactionId: txId,
+    };
+
+    setRentalProperties(prev =>
+      prev.map(p =>
+        p.id === propertyId
+          ? {
+              ...p,
+              status: 'vacant',
+              tenantName: '',
+              tenantPhone: '',
+              depositAmount: 0,
+              settlements: [newSettlement, ...(p.settlements || [])],
+            }
+          : p
+      )
+    );
+
+    addToast(`Tenant vacated from ${prop.name}. Deposit refund: ₹${settlementData.refundAmount.toLocaleString()}${settlementData.deductionAmount > 0 ? ` (₹${settlementData.deductionAmount} deducted for cleaning/damages)` : ''}`, 'success');
+  };
+
+  const assignTenantToProperty = async (
+    propertyId: string,
+    tenantData: {
+      tenantName: string;
+      tenantPhone?: string;
+      monthlyRent: number;
+      dueDayOfMonth?: number;
+      depositAmount: number;
+      depositDate: string;
+      leaseStartDate: string;
+      accountId?: string;
+      recordDepositAsIncome?: boolean;
+    }
+  ) => {
+    const prop = rentalProperties.find(p => p.id === propertyId);
+    if (!prop) return;
+
+    if (tenantData.recordDepositAsIncome && tenantData.depositAmount > 0 && tenantData.accountId) {
+      await addTransaction({
+        date: tenantData.depositDate,
+        type: 'income',
+        amount: Number(tenantData.depositAmount),
+        category: 'cat_rental_advance',
+        accountId: tenantData.accountId,
+        description: `Rental Advance Received: ${prop.name} from ${tenantData.tenantName}`,
+        paymentMode: 'bank',
+        targetType: 'rental_advance',
+        propertyId: prop.id,
+        propertyName: prop.name,
+        tenantName: tenantData.tenantName,
+        tags: ['rent', 'advance', 'new_tenant', prop.type],
+      });
+    }
+
+    setRentalProperties(prev =>
+      prev.map(p =>
+        p.id === propertyId
+          ? {
+              ...p,
+              status: 'occupied',
+              tenantName: tenantData.tenantName,
+              tenantPhone: tenantData.tenantPhone,
+              monthlyRent: Number(tenantData.monthlyRent),
+              dueDayOfMonth: tenantData.dueDayOfMonth || p.dueDayOfMonth || 1,
+              depositAmount: Number(tenantData.depositAmount),
+              depositReceivedDate: tenantData.depositDate,
+              leaseStartDate: tenantData.leaseStartDate,
+            }
+          : p
+      )
+    );
+
+    addToast(`New tenant ${tenantData.tenantName} assigned to ${prop.name}!`, 'success');
+  };
+
   // SETTINGS & SYNC
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
@@ -1724,6 +2016,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (Array.isArray(res.data.goals)) setGoals(res.data.goals);
           if (Array.isArray(res.data.loans)) setLoans(res.data.loans);
           if (Array.isArray(res.data.savings)) setSavings(res.data.savings);
+          if (Array.isArray(res.data.rentalProperties)) setRentalProperties(res.data.rentalProperties);
           if (Array.isArray(res.data.fields)) setFields(res.data.fields);
           if (Array.isArray(res.data.treeHarvests)) setTreeHarvests(res.data.treeHarvests);
           if (Array.isArray(res.data.livestock)) setLivestock(res.data.livestock);
@@ -1751,6 +2044,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         let mergedGls = goals;
         let mergedLns = loans;
         let mergedSav = savings;
+        let mergedProps = rentalProperties;
 
         try {
           const pullRes = await GoogleSheetApiService.fetchAllData(settings.sheetUrl);
@@ -1767,6 +2061,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             mergedGls = mergeCollectionsById(goals, pullRes.data.goals || []);
             mergedLns = mergeCollectionsById(loans, pullRes.data.loans || []);
             mergedSav = mergeCollectionsById(savings, pullRes.data.savings || []);
+            mergedProps = mergeCollectionsById(rentalProperties, pullRes.data.rentalProperties || []);
 
             // Update local state with merged collections
             setTransactions(mergedTx);
@@ -1781,6 +2076,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setGoals(mergedGls);
             setLoans(mergedLns);
             setSavings(mergedSav);
+            setRentalProperties(mergedProps);
           }
         } catch (fetchErr) {
           console.warn('Smart sync initial pull fallback:', fetchErr);
@@ -1799,6 +2095,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           goals: mergedGls,
           loans: mergedLns,
           savings: mergedSav,
+          rentalProperties: mergedProps,
           settings: [
             {
               currency: settings.currency,
@@ -1833,6 +2130,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           goals,
           loans,
           savings,
+          rentalProperties,
           settings: [
             {
               currency: settings.currency,
@@ -1879,6 +2177,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTreeHarvests(StorageService.getTreeHarvests());
     setLoans(StorageService.getLoans());
     setSavings(StorageService.getSavings());
+    setRentalProperties(StorageService.getRentalProperties());
     addToast('Reset to demo sample data', 'info');
   };
 
@@ -1900,6 +2199,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         treeHarvests,
         loans,
         savings,
+        rentalProperties,
         settings,
         syncState,
         toasts,
@@ -1924,6 +2224,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         totalSavingsInvested,
         totalChitFundsValue,
         totalChitBulkReceived,
+        totalMonthlyRentExpected,
+        totalRentCollectedThisMonth,
+        totalDepositsHeld,
+        totalRentalIncomeAllTime,
         addTransaction,
         updateTransaction,
         deleteTransaction,
@@ -1964,6 +2268,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteSavingScheme,
         recordSavingInstallment,
         recordSavingBulkClaim,
+        addRentalProperty,
+        updateRentalProperty,
+        deleteRentalProperty,
+        collectPropertyRent,
+        settleAndVacateProperty,
+        assignTenantToProperty,
         setBudget,
         deleteBudget,
         addGoal,

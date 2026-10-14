@@ -35,14 +35,17 @@ Use any Google Sheet as your personal, zero-cost, private database for Kanakku36
 
 ---
 
-## 📑 Generated Sheets & Structure
+## 📑 Unified 8-Table Architecture
 
-The script automatically initializes and maintains the following tabs in your Google Sheet:
-- **`Transactions`**: id, date, type, amount, category, account, description, payment mode, tags
-- **`Categories`**: id, name, type (Expense/Income), icon, color, budgetLimit
-- **`Accounts`**: id, name, type (Bank, Cash, UPI, Credit Card), balance, number, color
-- **`Budgets`**: monthly targets, category limits, alert thresholds
-- **`SavingsGoals`**: target amount, saved amount, target date, progress
-- **`Settings`**: currency preferences, profile preferences
+The database is organized into **8 unified tables** that power the entire Kanakku360 ecosystem (Auth, Profiles, System Lookups, Accounts, Ledger, Real Estate & Agri Assets, and Loans & Chits):
 
-You can inspect or add formulas directly in your Google Sheet anytime!
+1. **`UserMaster`**: Multi-user accounts, family members, employees, farm workers & roles (`id, username, password, role, userType, status, createdAt`)
+2. **`UserDetails`**: Extensible attributes for family & employees: salaries, daily coolie wages, designations, phone, bank info (`id, userId, categoryName, value, updatedAt`)
+3. **`LoginHistory`**: Device and session security audit log (`id, userId, username, loginTime, ipAddress, userAgent, status`)
+4. **`DropdownMaster`**: Centralized taxonomy for categories, units, and dropdowns (`id, primaryCategory, secondaryCategory, value, labelEn, labelTa, icon, color, sortOrder, isActive`)
+5. **`AccountsMaster`**: Liquid funds, bank accounts, UPI, and wallets (`id, userId, name, type, accountNumber, balance, color, icon, isDefault, status, createdAt`)
+6. **`TransactionsMaster`**: Universal ledger for expenses, incomes, farm labor wages, milk/egg sales, coconut harvests, and rental collections (`id, userId, memberId, date, type, amount, categoryId, accountId, toAccountId, description, paymentMode, entityType, entityId, quantity, unitRate, paymentStatus, dueDate, tags, metadataJson, createdAt`)
+7. **`AssetsMaster`**: Physical assets including rental homes & shops (tenant ID, advance deposit, rent/lease amount, maintenance, property tax & due dates), farm land plots, boundary trees, and livestock (`id, userId, tenantId, assetType, name, nameTa, subType, agreementType, status, currentValue, advanceDeposit, rentOrLeaseAmount, maintenanceAmount, dueDayOfMonth, propertyTaxAmount, propertyTaxDueDate, taxAssessmentNumber, specsJson, notes, createdAt, updatedAt`)
+8. **`CommitmentsMaster`**: Recurring contractual obligations, loans, Tamil chit funds (சீட்டு), RD, FD, and savings goals (`id, userId, commitmentType, name, institution, principalOrTargetAmount, currentAmount, interestRate, emiOrInstallment, startDate, dueDate, tenureMonths, status, detailsJson, notes, createdAt, updatedAt`)
+
+👉 For the full column-by-column schema and JSON specs, see **[`table structure`](./table%20structure)**.

@@ -12,6 +12,7 @@ import type {
   FamilyMember,
   TreeHarvestEntry,
   FarmLivestock,
+  RentalProperty,
 } from '../types/finance';
 
 export interface SheetFullPayload {
@@ -27,6 +28,7 @@ export interface SheetFullPayload {
   livestock?: FarmLivestock[];
   workers?: FarmWorker[];
   familyMembers?: FamilyMember[];
+  rentalProperties?: RentalProperty[];
   settings?: Partial<AppSettings> | Partial<AppSettings>[];
 }
 
@@ -85,6 +87,12 @@ function normalizePayload(data: Partial<SheetFullPayload>): SheetFullPayload {
     workType: tx.workType ? String(tx.workType) : undefined,
     paymentStatus: tx.paymentStatus === 'pending' ? 'pending' : 'paid',
     dueDate: tx.dueDate ? String(tx.dueDate) : undefined,
+    propertyId: tx.propertyId ? String(tx.propertyId) : undefined,
+    propertyName: tx.propertyName ? String(tx.propertyName) : undefined,
+    propertyType: tx.propertyType ? String(tx.propertyType) : undefined,
+    tenantName: tx.tenantName ? String(tx.tenantName) : undefined,
+    depositDeduction: tx.depositDeduction !== undefined && tx.depositDeduction !== '' ? Number(tx.depositDeduction) : undefined,
+    targetType: tx.targetType ? (tx.targetType as any) : undefined,
   }));
 
   const accounts: Account[] = safeArray(data.accounts).map((acc: any) => ({
@@ -240,6 +248,62 @@ function normalizePayload(data: Partial<SheetFullPayload>): SheetFullPayload {
     notes: m.notes ? String(m.notes) : undefined,
   }));
 
+  const rentalProperties: RentalProperty[] = safeArray(data.rentalProperties).map((rp: any) => ({
+    id: String(rp.id || ''),
+    name: String(rp.name || ''),
+    nameTa: rp.nameTa ? String(rp.nameTa) : undefined,
+    type: rp.type || 'shop',
+    agreementType: rp.agreementType || 'rent',
+    address: rp.address ? String(rp.address) : undefined,
+    status: rp.status || 'occupied',
+    tenantUserId: rp.tenantUserId ? String(rp.tenantUserId) : undefined,
+    tenantName: rp.tenantName ? String(rp.tenantName) : undefined,
+    tenantPhone: rp.tenantPhone ? String(rp.tenantPhone) : undefined,
+    tenantAadhaar: rp.tenantAadhaar ? String(rp.tenantAadhaar) : undefined,
+    monthlyRent: Number(rp.monthlyRent) || 0,
+    dueDayOfMonth: rp.dueDayOfMonth !== undefined && rp.dueDayOfMonth !== '' ? Number(rp.dueDayOfMonth) : undefined,
+    maintenanceAmount: rp.maintenanceAmount !== undefined && rp.maintenanceAmount !== '' ? Number(rp.maintenanceAmount) : undefined,
+    depositAmount: Number(rp.depositAmount) || 0,
+    depositReceivedDate: rp.depositReceivedDate ? String(rp.depositReceivedDate) : undefined,
+    depositAccountId: rp.depositAccountId ? String(rp.depositAccountId) : undefined,
+    propertyTaxAmount: rp.propertyTaxAmount !== undefined && rp.propertyTaxAmount !== '' ? Number(rp.propertyTaxAmount) : undefined,
+    propertyTaxDueDate: rp.propertyTaxDueDate ? String(rp.propertyTaxDueDate) : undefined,
+    taxAssessmentNumber: rp.taxAssessmentNumber ? String(rp.taxAssessmentNumber) : undefined,
+    leaseStartDate: rp.leaseStartDate ? String(rp.leaseStartDate) : undefined,
+    leaseEndDate: rp.leaseEndDate ? String(rp.leaseEndDate) : undefined,
+    payments: safeArray(safeJson(rp.payments, [])).map((p: any) => ({
+      id: String(p.id || ''),
+      date: String(p.date || ''),
+      amount: Number(p.amount) || 0,
+      periodMonth: p.periodMonth ? String(p.periodMonth) : undefined,
+      tenantName: p.tenantName ? String(p.tenantName) : undefined,
+      paymentMode: p.paymentMode || 'cash',
+      accountId: p.accountId ? String(p.accountId) : undefined,
+      notes: p.notes ? String(p.notes) : undefined,
+      transactionId: p.transactionId ? String(p.transactionId) : undefined,
+    })),
+    settlements: safeArray(safeJson(rp.settlements, [])).map((s: any) => ({
+      id: String(s.id || ''),
+      tenantName: String(s.tenantName || ''),
+      vacateDate: String(s.vacateDate || ''),
+      originalDeposit: Number(s.originalDeposit) || 0,
+      deductionAmount: Number(s.deductionAmount) || 0,
+      deductionReason: s.deductionReason ? String(s.deductionReason) : undefined,
+      cleaningDeduction: s.cleaningDeduction !== undefined && s.cleaningDeduction !== '' ? Number(s.cleaningDeduction) : undefined,
+      paintingDeduction: s.paintingDeduction !== undefined && s.paintingDeduction !== '' ? Number(s.paintingDeduction) : undefined,
+      damageDeduction: s.damageDeduction !== undefined && s.damageDeduction !== '' ? Number(s.damageDeduction) : undefined,
+      unpaidBillsDeduction: s.unpaidBillsDeduction !== undefined && s.unpaidBillsDeduction !== '' ? Number(s.unpaidBillsDeduction) : undefined,
+      refundedAmount: Number(s.refundedAmount) || 0,
+      refundDate: String(s.refundDate || ''),
+      paymentMode: s.paymentMode || 'cash',
+      accountId: s.accountId ? String(s.accountId) : undefined,
+      notes: s.notes ? String(s.notes) : undefined,
+      transactionId: s.transactionId ? String(s.transactionId) : undefined,
+    })),
+    notes: rp.notes ? String(rp.notes) : undefined,
+    createdAt: rp.createdAt ? String(rp.createdAt) : undefined,
+  }));
+
   return {
     transactions,
     accounts,
@@ -253,6 +317,7 @@ function normalizePayload(data: Partial<SheetFullPayload>): SheetFullPayload {
     livestock,
     workers,
     familyMembers,
+    rentalProperties,
     settings: data.settings,
   };
 }
@@ -398,6 +463,7 @@ export const GoogleSheetApiService = {
         goals: Array.isArray(payload.goals) ? payload.goals : [],
         loans: Array.isArray(payload.loans) ? payload.loans : [],
         savings: Array.isArray(payload.savings) ? payload.savings : [],
+        rentalProperties: Array.isArray(payload.rentalProperties) ? payload.rentalProperties : [],
         settings: settingsArray,
       },
     };

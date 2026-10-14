@@ -19,114 +19,165 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   const sizeConfig = {
     sm: {
-      iconSize: 'w-7 h-7',
+      containerSize: 'w-8 h-8',
       titleText: 'text-sm font-bold',
-      badgeText: 'text-[10px] px-1.5 py-0.5 font-bold',
+      badgeText: 'text-[9px] px-1.5 py-0.5 font-bold',
       subText: 'text-[9px]',
+      dotSize: 'w-1.5 h-1.5',
     },
     md: {
-      iconSize: 'w-9 h-9',
+      containerSize: 'w-10 h-10',
       titleText: 'text-base sm:text-lg font-extrabold',
-      badgeText: 'text-[11px] px-2 py-0.5 font-extrabold',
+      badgeText: 'text-[10px] px-2 py-0.5 font-extrabold',
       subText: 'text-[10px]',
+      dotSize: 'w-1.5 h-1.5',
     },
     lg: {
-      iconSize: 'w-11 h-11',
-      titleText: 'text-xl font-black',
-      badgeText: 'text-xs px-2.5 py-1 font-black',
+      containerSize: 'w-12 h-12',
+      titleText: 'text-xl font-black tracking-tight',
+      badgeText: 'text-xs px-2.5 py-0.5 font-black',
       subText: 'text-[11px]',
+      dotSize: 'w-2 h-2',
     },
     xl: {
-      iconSize: 'w-14 h-14',
-      titleText: 'text-2xl sm:text-3xl font-black',
+      containerSize: 'w-16 h-16',
+      titleText: 'text-2xl sm:text-3xl font-black tracking-tight',
       badgeText: 'text-sm px-3 py-1 font-black',
-      subText: 'text-xs tracking-widest',
+      subText: 'text-xs tracking-wider',
+      dotSize: 'w-2.5 h-2.5',
     },
   }[size];
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-2.5 select-none transition-all group ${
+      className={`flex items-center gap-2.5 select-none transition-all duration-200 group ${
         onClick ? 'cursor-pointer' : ''
       } ${className}`}
     >
-      {/* Precision Geometric Fintech Monogram */}
+      {/* Ultra-Modern 360 Fintech & Agri Orbital Emblem */}
       <div
-        className={`${sizeConfig.iconSize} shrink-0 rounded-xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-700/70 p-1.5 flex items-center justify-center shadow-md group-hover:border-emerald-500/50 group-hover:shadow-emerald-950/30 transition-all duration-200 relative overflow-hidden`}
+        className={`${sizeConfig.containerSize} shrink-0 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/40 border border-slate-700/80 p-1.5 flex items-center justify-center shadow-lg group-hover:border-emerald-400/60 group-hover:shadow-emerald-500/20 group-hover:shadow-xl transition-all duration-300 relative overflow-hidden`}
       >
+        {/* Soft Ambient Inner Glow */}
+        <div className="absolute inset-0 bg-radial-at-c from-emerald-500/15 via-transparent to-transparent pointer-events-none group-hover:opacity-100 transition-opacity" />
+
         <svg
-          viewBox="0 0 32 32"
+          viewBox="0 0 36 36"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full relative z-10"
+          className="w-full h-full relative z-10 transition-transform duration-300 group-hover:scale-105"
         >
-          {/* Vertical Stem */}
+          {/* Outer 360 Continuous Orbital Ring with Arrow Head */}
           <path
-            d="M7 6V26"
-            stroke="url(#logoStemGrad)"
-            strokeWidth="3.2"
+            d="M 18 3 A 15 15 0 1 1 5 24"
+            stroke="url(#ringGradient)"
+            strokeWidth="2.5"
             strokeLinecap="round"
           />
-          {/* Upper Diagonal Arm */}
-          <path
-            d="M8.5 16L19 6.5"
-            stroke="#10B981"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-          />
-          {/* 360 Continuous Growth Loop */}
-          <path
-            d="M13.5 13L25.5 25"
-            stroke="url(#logoLoopGrad)"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-          />
-          {/* Orbit Node */}
-          <circle cx="24.5" cy="8" r="2.5" fill="#10B981" />
 
+          {/* Upward Growth Arrowhead on 360 Orbit */}
+          <path
+            d="M 21 2 L 18 3 L 19 6.5"
+            stroke="url(#accentGradient)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Central Stylized 'K' & Rupee Pillar with Ascending Sprout */}
+          <path
+            d="M 12 9 V 27"
+            stroke="url(#pillarGradient)"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+
+          {/* Upper Diagonal Arm (Agri Growth & Wealth Ascent) */}
+          <path
+            d="M 13.5 18 L 24 10"
+            stroke="url(#accentGradient)"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+
+          {/* Lower Diagonal Anchor & Loop */}
+          <path
+            d="M 17 15.5 L 25 27"
+            stroke="url(#ringGradient)"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
+
+          {/* Glowing Prosperity Node */}
+          <circle
+            cx="24.5"
+            cy="9.5"
+            r="2.5"
+            fill="url(#accentGradient)"
+            className="filter drop-shadow(0 0 3px #10B981)"
+          />
+
+          {/* Gradient Definitions */}
           <defs>
-            <linearGradient id="logoStemGrad" x1="7" y1="6" x2="7" y2="26" gradientUnits="userSpaceOnUse">
+            <linearGradient id="pillarGradient" x1="12" y1="9" x2="12" y2="27" gradientUnits="userSpaceOnUse">
               <stop stopColor="#6366F1" />
+              <stop offset="0.5" stopColor="#3B82F6" />
               <stop offset="1" stopColor="#10B981" />
             </linearGradient>
-            <linearGradient id="logoLoopGrad" x1="13.5" y1="13" x2="25.5" y2="25" gradientUnits="userSpaceOnUse">
+            <linearGradient id="accentGradient" x1="13" y1="18" x2="25" y2="9" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#34D399" />
+              <stop offset="0.6" stopColor="#10B981" />
+              <stop offset="1" stopColor="#F59E0B" />
+            </linearGradient>
+            <linearGradient id="ringGradient" x1="5" y1="3" x2="31" y2="33" gradientUnits="userSpaceOnUse">
               <stop stopColor="#10B981" />
-              <stop offset="1" stopColor="#059669" />
+              <stop offset="0.4" stopColor="#06B6D4" />
+              <stop offset="0.8" stopColor="#6366F1" />
+              <stop offset="1" stopColor="#10B981" />
             </linearGradient>
           </defs>
         </svg>
       </div>
 
-      {/* Typography */}
+      {/* Brand Typography */}
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-1.5">
           <span
-            className={`${sizeConfig.titleText} tracking-tight ${
+            className={`${sizeConfig.titleText} font-bold tracking-tight ${
               settings.theme === 'light'
-                ? 'text-slate-900'
-                : 'text-white'
-            }`}
+                ? 'text-slate-900 group-hover:text-emerald-700'
+                : 'text-white group-hover:text-emerald-300'
+            } transition-colors`}
           >
             {isTamil ? 'கணக்கு' : 'Kanakku'}
           </span>
+
+          {/* High-Impact 360° Shimmer Badge */}
           <span
-            className={`${sizeConfig.badgeText} rounded-md bg-emerald-500 text-slate-950 tracking-wider shadow-sm`}
+            className={`${sizeConfig.badgeText} rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black tracking-wider shadow-md shadow-emerald-500/20 group-hover:shadow-emerald-500/40 group-hover:scale-105 transition-all flex items-center gap-0.5`}
           >
-            360
+            <span>360</span>
+            <span className="text-[75%] opacity-80 leading-none">°</span>
           </span>
         </div>
 
+        {/* Subtitle with Active Status Pulse */}
         {showSubtitle && (
-          <span
-            className={`${sizeConfig.subText} ${
-              settings.theme === 'light'
-                ? 'text-slate-500 font-medium'
-                : 'text-slate-400 font-medium'
-            } uppercase tracking-wider hidden xs:block truncate`}
-          >
-            {isTamil ? 'நிதி & பண்ணை மேலாண்மை' : 'Enterprise Finance & Agri'}
-          </span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span
+              className={`${sizeConfig.dotSize} rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-pulse shrink-0`}
+            />
+            <span
+              className={`${sizeConfig.subText} ${
+                settings.theme === 'light'
+                  ? 'text-slate-600 font-medium'
+                  : 'text-slate-400 font-medium'
+              } uppercase tracking-wider hidden xs:block truncate`}
+            >
+              {isTamil ? 'குடும்பம் • பண்ணை • வாடகை' : 'Family • Agri • Rentals'}
+            </span>
+          </div>
         )}
       </div>
     </div>
